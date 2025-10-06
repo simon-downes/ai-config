@@ -24,6 +24,7 @@
   "resources": [
     "file://README.md",
     "file://README.*.md",
+    "file://CONTRIBUTING.md",
     "file://docs/**/*.md",
     "file://.cursor/rules/*.md",
     "file://AGENTS.md",
