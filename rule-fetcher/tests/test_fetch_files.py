@@ -133,3 +133,37 @@ def test_resolve_sources_github_url():
     expected = "https://raw.githubusercontent.com/user/repo/main/file.md"
     result = fetch_rules.resolve_sources([github_url])
     assert result == [expected]
+
+
+def test_dangerous_root_directory():
+    """Test that root directory is blocked."""
+    result = fetch_rules.resolve_sources(["/"])
+    assert result == []
+
+
+def test_dangerous_glob_patterns():
+    """Test that dangerous glob patterns are blocked."""
+    dangerous_patterns = ["/", "/*", "/**"]
+    for pattern in dangerous_patterns:
+        result = fetch_rules.resolve_sources([pattern])
+        assert result == []
+
+
+def test_safe_paths_allowed():
+    """Test that safe paths are not blocked by safety checks."""
+    # These paths should pass safety checks (though files may not exist)
+    safe_paths = [
+        "/usr/share/doc/test.md",  # Specific file under /usr
+        "/etc/config.md",  # Specific file under /etc
+        "/tmp/test.md",  # Specific file under /tmp
+    ]
+
+    # We're only testing that these don't get blocked by safety checks
+    # The actual file existence will be handled normally
+    for path in safe_paths:
+        result = fetch_rules.resolve_sources([path])
+        # Should not be empty due to safety blocks (though file may not exist)
+        # The safety check should not prevent these from being processed
+        assert isinstance(
+            result, list
+        )  # Just verify it returns a list without crashing

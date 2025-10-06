@@ -22,6 +22,34 @@ MAGENTA = "\033[35m"
 RESET = "\033[0m"
 
 
+def is_dangerous_source(source: str) -> bool:
+    """Check if a source path is dangerous and should be blocked.
+
+    Args:
+        source: Source path to check.
+
+    Returns:
+        True if the source is dangerous and should be blocked.
+    """
+    # Special case for root directory
+    if source == "/":
+        return True
+
+    # Dangerous directory patterns
+    dangerous_dirs = {"/proc", "/sys", "/dev", "/run", "/root"}
+
+    # Check if source starts with any dangerous directory
+    for dangerous_dir in dangerous_dirs:
+        if source.startswith(dangerous_dir + "/") or source == dangerous_dir:
+            return True
+
+    # Check for dangerous glob patterns
+    if source in ("/*", "/**"):
+        return True
+
+    return False
+
+
 def resolve_sources(sources: List[str]) -> List[str]:
     """Resolve source patterns into actual file paths.
 
@@ -39,6 +67,12 @@ def resolve_sources(sources: List[str]) -> List[str]:
     files = []
     for source in sources:
         print(f"- {source}")
+
+        # Check for dangerous sources first
+        if is_dangerous_source(source):
+            print(f"  {RED}ERROR{RESET}: Dangerous source skipped: {source}")
+            continue
+
         if source.startswith(("http://", "https://")):
             # Convert GitHub URLs to raw content URLs
             if "github.com" in source and "/blob/" in source:
@@ -47,7 +81,8 @@ def resolve_sources(sources: List[str]) -> List[str]:
                 ).replace("/blob/", "/")
             files.append(source)
         else:
-            path = Path(source).expanduser()
+            path = Path(source).expanduser().resolve()
+
             if path.is_dir():
                 count = 0
                 for i, p in enumerate(path.rglob("*.md")):
