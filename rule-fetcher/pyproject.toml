@@ -1,0 +1,16 @@
+[project]
+name = "rule-fetcher"
+version = "0.1.0"
+description = "File fetcher script that copies/downloads files based on YAML configuration"
+dependencies = [
+    "pyyaml",
+]
+
+[project.scripts]
+fetch-files = "fetch_files:main"
+
+[tool.black]
+line-length = 88
+
+[tool.ruff]
+line-length = 88

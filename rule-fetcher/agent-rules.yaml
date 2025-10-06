@@ -1,0 +1,5 @@
+sources:
+  - ../rules/coding.md
+  - /home/simon/dev/ai-config/rules/terraform.md
+  - https://github.com/simon-downes/ai-config/blob/main/ai-readme-prompt.md
+output: ./fetched-rules
