@@ -16,6 +16,7 @@ Core principles and practices for writing maintainable, high-quality code.
 - You SHOULD extract common logic when duplication creates maintenance burden
 - You MUST NOT copy-paste code without considering abstraction
 - You SHOULD allow minor duplication if it improves code clarity
+- You MUST NOT extract code just to reduce line count if it hurts readability
 
 ### YAGNI (You Aren't Gonna Need It)
 - You MUST implement only explicitly requested features
@@ -23,9 +24,10 @@ Core principles and practices for writing maintainable, high-quality code.
 - You MUST resist building generic solutions for specific problems
 
 ### KISS (Keep It Simple, Stupid)
-- You SHOULD prefer simple, understandable approaches
-- You SHOULD avoid unnecessary complexity
-- You SHOULD break complex problems into smaller, simpler parts
+- You SHOULD prefer simple, understandable approaches at all levels of design
+- You SHOULD avoid unnecessary complexity that doesn't reflect problem complexity
+- You SHOULD break complex problems into smaller, simpler parts when it improves overall system clarity
+- You SHOULD NOT artificially reduce complexity metrics at the expense of readability or maintainability
 
 ## Code Quality
 *Standards for writing clear, maintainable, and well-documented code.*

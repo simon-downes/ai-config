@@ -23,7 +23,14 @@ RESET = "\033[0m"
 
 
 def resolve_sources(sources: List[str]) -> List[str]:
-    """Resolve source patterns into actual file paths."""
+    """Resolve source patterns into actual file paths.
+
+    Args:
+        sources: List of source patterns (files, directories, URLs, globs).
+
+    Returns:
+        List of resolved file paths ready for fetching.
+    """
     if not sources:
         print(f"{YELLOW}WARNING{RESET}: No sources specified in config")
         return []
@@ -78,7 +85,12 @@ def resolve_sources(sources: List[str]) -> List[str]:
 
 
 def fetch(files: List[str], output_dir: str) -> None:
-    """Copy or download files to output directory."""
+    """Copy or download files to output directory.
+
+    Args:
+        files: List of file paths to copy/download.
+        output_dir: Target directory for copied files.
+    """
 
     if not files:
         return
@@ -105,7 +117,17 @@ def fetch(files: List[str], output_dir: str) -> None:
 
 
 def load_config(config_path: str) -> tuple[List[str], str]:
-    """Load configuration from YAML file."""
+    """Load configuration from YAML file.
+
+    Args:
+        config_path: Path to YAML configuration file.
+
+    Returns:
+        Tuple of (sources list, output directory path).
+
+    Raises:
+        SystemExit: If config is invalid or output directory is not writable.
+    """
     try:
         with open(config_path) as f:
             config = yaml.safe_load(f)
@@ -149,7 +171,7 @@ def load_config(config_path: str) -> tuple[List[str], str]:
 
 
 def main() -> None:
-    """Main entry point."""
+    """Main entry point for the fetch-rules command."""
     parser = argparse.ArgumentParser(description="Fetch files based on YAML config")
     parser.add_argument(
         "config",

@@ -33,7 +33,7 @@ Python-specific standards, idioms, and toolchain requirements for writing qualit
 - You MUST use 4 spaces for indentation, never tabs
 - You SHOULD limit lines to 88 characters (Black formatter standard)
 - You MUST surround top-level functions and classes with two blank lines
-- You MUST follow Google-style docstrings
+- You MUST follow Google-style docstrings but don't include type info
 - You SHOULD use blank lines to separate logical sections
 - You MUST NOT include trailing whitespace
 - You MUST end files with a single newline
