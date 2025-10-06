@@ -8,7 +8,7 @@ dependencies = [
 ]
 
 [project.scripts]
-fetch-files = "fetch_files:main"
+fetch-rules = "fetch_rules:main"
 
 [tool.black]
 line-length = 88
