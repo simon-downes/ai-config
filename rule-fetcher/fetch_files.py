@@ -35,7 +35,9 @@ def resolve_sources(sources: List[str]) -> List[str]:
         if source.startswith(("http://", "https://")):
             # Convert GitHub URLs to raw content URLs
             if "github.com" in source and "/blob/" in source:
-                source = source.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
+                source = source.replace(
+                    "github.com", "raw.githubusercontent.com"
+                ).replace("/blob/", "/")
             files.append(source)
         else:
             path = Path(source).expanduser()
@@ -43,7 +45,9 @@ def resolve_sources(sources: List[str]) -> List[str]:
                 count = 0
                 for i, p in enumerate(path.rglob("*.md")):
                     if i >= DEFAULT_FILE_LIMIT:
-                        print(f"  {YELLOW}WARNING{RESET}: Directory hit file limit ({DEFAULT_FILE_LIMIT})")
+                        print(
+                            f"  {YELLOW}WARNING{RESET}: Directory hit file limit ({DEFAULT_FILE_LIMIT})"
+                        )
                         break
                     files.append(str(p))
                     count += 1
@@ -52,7 +56,9 @@ def resolve_sources(sources: List[str]) -> List[str]:
                 count = 0
                 for i, p in enumerate(glob.iglob(source, recursive=True)):
                     if i >= DEFAULT_FILE_LIMIT:
-                        print(f"  {YELLOW}WARNING{RESET}: Glob pattern hit file limit ({DEFAULT_FILE_LIMIT})")
+                        print(
+                            f"  {YELLOW}WARNING{RESET}: Glob pattern hit file limit ({DEFAULT_FILE_LIMIT})"
+                        )
                         break
                     files.append(p)
                     count += 1
@@ -136,7 +142,9 @@ def load_config(config_path: str) -> tuple[List[str], str]:
         print(f"{RED}ERROR{RESET}: Missing required key in config: {e}")
         sys.exit(1)
     except (PermissionError, OSError) as e:
-        print(f"{RED}ERROR{RESET}: Cannot write to output directory: {output_path} ({e})")
+        print(
+            f"{RED}ERROR{RESET}: Cannot write to output directory: {output_path} ({e})"
+        )
         sys.exit(1)
 
 
@@ -147,7 +155,7 @@ def main() -> None:
         "config",
         nargs="?",
         default=str(Path.home() / ".agent-rules.yaml"),
-        help="Path to config file (default: ~/.agent-rules.yaml)"
+        help="Path to config file (default: ~/.agent-rules.yaml)",
     )
     args = parser.parse_args()
 
@@ -156,6 +164,7 @@ def main() -> None:
     fetch(files, output_dir)
 
     print(f"\n{GREEN}All Done!{RESET}")
+
 
 if __name__ == "__main__":
     main()
