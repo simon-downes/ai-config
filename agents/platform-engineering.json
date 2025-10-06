@@ -1,14 +1,11 @@
 {
   "name": "platform-engineering",
   "description": "AI agent specialized in platform engineering tasks",
-  "prompt": "You are an expert platform engineering specialist with deep expertise in AWS, Terraform, Python, Kubernetes, and GitHub Actions. You excel at infrastructure-as-code, container orchestration, CI/CD pipelines, and cloud architecture. You occasionally work with web development projects using PHP, Sass, HTMX, and JavaScript. You follow the coding standards and best practices defined in the provided rules. Always prioritize security, scalability, and maintainability. When solving problems, consider the full platform lifecycle from development to production deployment.",
+  "prompt": "You are an expert platform engineering specialist with deep expertise in AWS, Terraform, Python, Kubernetes, and GitHub Actions. You excel at infrastructure-as-code, container orchestration, CI/CD pipelines, and cloud architecture. You occasionally work with web development projects using PHP, Sass, HTMX, and JavaScript. You MUST strictly follow all coding standards, best practices, and rules defined in the provided documentation and rule files. Always prioritize security, scalability, and maintainability. When solving problems, consider the full platform lifecycle from development to production deployment. Before implementing any solution, ensure it complies with the established guidelines and standards provided in your context.",
   "mcpServers": {
     "aws-knowledge": {
-      "command": "uvx awslabs.aws-knowledge-mcp-server@latest",
-      "args": [],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      }
+      "command": "uvx",
+      "args": ["fastmcp", "run", "https://knowledge-mcp.global.api.aws"]
     },
     "fetch": {
       "command": "uvx",
@@ -17,11 +14,21 @@
   },
   "tools": [
     "fs_read",
-    "fs_write", 
+    "fs_write",
     "execute_bash",
+    "introspect",
     "use_aws",
     "@aws-knowledge",
     "@fetch"
+  ],
+  "resources": [
+    "file://README.md",
+    "file://README.*.md",
+    "file://docs/**/*.md",
+    "file://.cursor/rules/*.md",
+    "file://AGENTS.md",
+    "file:///opt/platform-rules/*.md",
+    "file://.amazonq/rules/**/*.md"
   ],
   "toolAliases": {
     "@fetch/fetch": "fetch",
@@ -29,13 +36,14 @@
   },
   "allowedTools": [
     "fs_read",
+    "introspect",
     "@fetch"
   ],
   "toolsSettings": {
     "fs_write": {
       "allowedPaths": [
         "**/*.tf",
-        "**/*.yaml", 
+        "**/*.yaml",
         "**/*.yml",
         "**/*.json",
         "**/*.py",
@@ -54,14 +62,14 @@
         "kubectl get .*",
         "kubectl describe .*",
         "terraform plan.*",
-        "tofu plan.*", 
+        "tofu plan.*",
         "helm version.*",
         "docker --version.*",
-        "docker ps.*",
-        "docker images.*",
+        "docker ps .*",
+        "docker images .*",
         "curl .*",
-        "ls.*",
-        "pwd.*",
+        "ls .*",
+        "pwd",
         "cat .*",
         "head .*",
         "tail .*",
@@ -74,7 +82,8 @@
   "hooks": {
     "agentSpawn": [
       {
-        "command": "platform-agent-startup.sh"
+        "command": "echo",
+        "args": ["Platform Engineering Agent Ready"]
       }
     ]
   }
