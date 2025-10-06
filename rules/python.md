@@ -62,6 +62,7 @@ Python-specific standards, idioms, and toolchain requirements for writing qualit
 - You SHOULD use `*args` and `**kwargs` judiciously, with clear documentation
 - You MUST define `__str__` and `__repr__` methods for custom classes
 - You MUST group imports: standard library, third-party, local
+- You MUST separate import groups by a blank line
 - You SHOULD use absolute imports over relative imports
 - You MUST NOT use wildcard imports (`from module import *`)
 - You SHOULD import modules, not individual functions when importing many items
