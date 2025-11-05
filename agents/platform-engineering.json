@@ -23,13 +23,12 @@
   ],
   "resources": [
     "file://README.md",
-    "file://README.*.md",
     "file://CONTRIBUTING.md",
+    "file://AGENTS.md",
     "file://docs/**/*.md",
     "file://.cursor/rules/*.md",
-    "file://AGENTS.md",
-    "file:///opt/platform-rules/*.md",
-    "file://.amazonq/rules/**/*.md"
+    "file://.amazonq/rules/**/*.md",
+    "file:///opt/platform-rules/*.md"
   ],
   "toolAliases": {
     "@fetch/fetch": "fetch",
@@ -44,17 +43,28 @@
     "fs_write": {
       "allowedPaths": [
         "**/*.tf",
+        "**/*.tfvars",
+        "**/*.md",
         "**/*.yaml",
         "**/*.yml",
+        "**/*.toml",
         "**/*.json",
         "**/*.py",
+        "**/*.php",
         "**/*.sh",
-        "**/Dockerfile*",
-        "**/docker-compose*"
+        "**/*.rego",
+        "**/*.conf",
+        "**/.env",
+        "**/*.js",
+        "**/*.scss",
+        "**/Dockerfile*"
       ]
     },
     "execute_bash": {
       "allowedCommands": [
+        "uv .*",
+        "php .*",
+        "python .*",
         "git status.*",
         "git branch.*",
         "git log.*",
