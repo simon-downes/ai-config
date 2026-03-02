@@ -1,0 +1,179 @@
+#!/bin/bash
+set -eo pipefail
+
+# Colors
+RED='\033[0;91m'
+GREEN='\033[0;92m'
+YELLOW='\033[0;93m'
+BLUE='\033[0;94m'
+MAGENTA='\033[0;95m'
+CYAN='\033[0;96m'
+RESET='\033[0m'
+
+show_help() {
+    cat << EOF
+Usage: kiro [OPTIONS] [DIRECTORY] [COMMAND...]
+
+Run kiro-cli in a sandboxed Docker container with isolated filesystem access.
+
+OPTIONS:
+    --help              Show this help message
+    --rebuild           Force rebuild of the Docker image
+    --shell             Drop into bash shell instead of running kiro-cli
+    --list              List all running sandbox sessions
+    --stop <session>    Stop a specific sandbox session
+
+ARGUMENTS:
+    DIRECTORY           Working directory to mount (defaults to current directory)
+    COMMAND             Arguments to pass to kiro-cli (if not using --shell)
+
+EXAMPLES:
+    kiro                        Start kiro-cli in current directory with resume prompt
+    kiro chat                   Start kiro-cli chat without resume prompt
+    kiro --shell                Open bash shell in sandbox
+    kiro /path/to/project       Start kiro-cli in specified directory
+    kiro --list                 Show running sessions
+    kiro --stop dev-ai-config   Stop the dev-ai-config session
+    kiro --rebuild              Rebuild image and start kiro-cli
+
+ENVIRONMENT VARIABLES:
+    GH_TOKEN            GitHub personal access token for gh CLI authentication
+
+NOTES:
+    - Sessions are isolated by directory path
+    - Only one session per directory can run at a time
+    - Credentials and conversations are shared with host kiro-cli
+    - Working directory must be under your home directory
+
+EOF
+}
+
+list_sessions() {
+    echo -e "${BLUE}Running sandbox sessions:${RESET}"
+    docker ps --filter "name=kiro-sandbox-" --format "table {{.Names}}\t{{.Status}}\t{{.CreatedAt}}" || true
+}
+
+stop_session() {
+    local session_name="$1"
+    local container_name="kiro-sandbox-${session_name}"
+
+    if docker ps --format '{{.Names}}' | grep -q "^${container_name}$" || false; then
+        echo -e "Stopping session: ${MAGENTA}${session_name}${RESET}"
+        docker stop "$container_name"
+        echo -e "${GREEN}Session stopped${RESET}"
+    else
+        echo -e "${RED}Error: No running session found for ${MAGENTA}${session_name}${RESET}"
+        exit 1
+    fi
+}
+
+generate_session_name() {
+    local work_dir="$1"
+    local home_dir="$2"
+    local relative_path="${work_dir#$home_dir/}"
+    echo "$relative_path" | tr '[:upper:]/ ' '[:lower:]--' | sed 's/--*/-/g' || true
+}
+
+check_session_running() {
+    local session_name="$1"
+    if docker ps --format '{{.Names}}' | grep -q "^kiro-sandbox-${session_name}$" || false; then
+        echo -e "${RED}Error: A sandbox session is already running for this directory${RESET}"
+        echo -e "Container: ${MAGENTA}kiro-sandbox-${session_name}${RESET}"
+        exit 1
+    fi
+}
+
+build_image() {
+    if ! docker image inspect kiro-sandbox &>/dev/null; then
+        echo -e "${BLUE}Building kiro-sandbox image...${RESET}"
+        docker build -t kiro-sandbox . || exit 1
+    fi
+}
+
+run_container() {
+    local session_name="$1"
+    local work_dir="$2"
+    local shell_mode="$3"
+    shift 3
+    local cmd_args="$@"
+
+    local entrypoint_override=""
+    local final_cmd=""
+
+    if [ "$shell_mode" = true ]; then
+        entrypoint_override="--entrypoint /bin/bash"
+    else
+        final_cmd="$cmd_args"
+    fi
+
+    docker run --rm -it \
+        --name "kiro-sandbox-${session_name}" \
+        $entrypoint_override \
+        -w "/opt/$session_name" \
+        -v "$HOME/.kiro:/root/.kiro" \
+        -v "$HOME/Library/Application Support/kiro-cli:/root/.local/share/kiro-cli" \
+        -v "$work_dir:/opt/$session_name" \
+        -e "SESSION_NAME=$session_name" \
+        ${GH_TOKEN:+-e "GH_TOKEN=$GH_TOKEN"} \
+        kiro-sandbox $final_cmd
+}
+
+# Parse flags
+SHELL_MODE=false
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --help)
+            show_help
+            exit 0
+            ;;
+        --rebuild)
+            echo -e "${BLUE}Rebuilding kiro-sandbox image...${RESET}"
+            docker build -t kiro-sandbox . || exit 1
+            echo -e "${GREEN}Image rebuilt successfully${RESET}"
+            exit 0
+            ;;
+        --shell)
+            SHELL_MODE=true
+            shift
+            ;;
+        --list)
+            list_sessions
+            exit 0
+            ;;
+        --stop)
+            stop_session "$2"
+            exit 0
+            ;;
+        --*)
+            echo -e "${RED}Error: Unknown option ${MAGENTA}$1${RESET}"
+            echo
+            show_help
+            exit 1
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+# Determine work directory
+WORK_DIR="${1:-$(pwd)}"
+WORK_DIR="$(cd "$WORK_DIR" && pwd)"
+HOME_DIR="$HOME"
+
+# Verify work directory is under home directory
+if [[ "$WORK_DIR" != "$HOME_DIR"* ]]; then
+    echo -e "${RED}Error: Work directory must be under home directory ${MAGENTA}$HOME_DIR${RESET}"
+    exit 1
+fi
+
+# Generate session name and check if already running
+SESSION_NAME=$(generate_session_name "$WORK_DIR" "$HOME_DIR")
+check_session_running "$SESSION_NAME"
+
+# Build image if needed
+build_image
+
+# Run container
+run_container "$SESSION_NAME" "$WORK_DIR" "$SHELL_MODE" "${@:2}"

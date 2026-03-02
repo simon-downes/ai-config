@@ -31,6 +31,7 @@ Follow with a blank line before your main response.
 
 IMPORTANT: These apply to all workflow phases:
 
+- You MUST check if there is a suitable subagent available to handle a given request, and if so delegate the request to that subagent.
 - You MUST operate in _one_ of the 4 phases
 - You MUST keep track of the current phase and _always_ know which phase is current.
 - You MUST NOT change phase until prompting me _and_ receiving clear approval (such as "yes", "approved", "looks good", etc.)
