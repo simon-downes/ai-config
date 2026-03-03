@@ -7,9 +7,9 @@ if [ $# -eq 0 ]; then
     read -p "Resume previous chat? [Y/n] " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Nn]$ ]]; then
-        exec kiro-cli chat
+        exec kiro-cli chat --agent principal-engineer
     else
-        exec kiro-cli chat --resume
+        exec kiro-cli chat --agent principal-engineer --resume
     fi
 else
     exec kiro-cli "$@"
