@@ -1,0 +1,127 @@
+{
+  "name": "principal-engineer-safe",
+  "description": "Principal engineer agent with restricted file access for use outside sandbox",
+  "prompt": "file://./principal-engineer.prompt.md",
+  "mcpServers": {
+    "aws-knowledge": {
+      "command": "uvx",
+      "args": ["fastmcp", "run", "https://knowledge-mcp.global.api.aws"]
+    },
+    "fetch": {
+      "command": "uvx",
+      "args": ["mcp-server-fetch"]
+    }
+  },
+  "tools": [
+    "read",
+    "write",
+    "glob",
+    "grep",
+    "shell",
+    "aws",
+    "web_search",
+    "web_fetch",
+    "use_subagent",
+    "introspect",
+    "code",
+    "@aws-knowledge",
+    "@fetch"
+  ],
+  "allowedTools": [
+    "read",
+    "glob",
+    "grep",
+    "introspect",
+    "code",
+    "web_search",
+    "web_fetch",
+    "use_subagent",
+    "aws",
+    "@aws-knowledge",
+    "@fetch"
+  ],
+  "toolAliases": {
+    "@fetch/fetch": "fetch",
+    "@aws-knowledge": "awsdocs"
+  },
+  "toolsSettings": {
+    "write": {
+      "allowedPaths": [
+        "**/*.tf",
+        "**/*.tfvars",
+        "**/*.hcl",
+        "**/*.rego",
+        "**/*.md",
+        "**/*.rst",
+        "**/*.adoc",
+        "**/*.yaml",
+        "**/*.yml",
+        "**/*.toml",
+        "**/*.json",
+        "**/*.py",
+        "**/*.php",
+        "**/*.sh",
+        "**/*.js",
+        "**/*.ts",
+        "**/*.scss",
+        "**/*.css",
+        "**/*.conf",
+        "**/*.ini",
+        "**/*.properties",
+        "**/*.xml",
+        "**/*.sql",
+        "**/.github/**/*.yml",
+        "**/.gitlab-ci.yml",
+        "**/Jenkinsfile",
+        "**/.circleci/**/*.yml",
+        "**/Dockerfile*",
+        "**/.env.example"
+      ]
+    },
+    "shell": {
+      "autoAllowReadonly": true,
+      "allowedCommands": [
+        "uv .*",
+        "npm run.*",
+        "php .*",
+        "python .*",
+        "git status.*",
+        "git log.*",
+        "git diff.*",
+        "git show.*",
+        "git branch.*",
+        "git fetch.*",
+        "tofu fmt.*",
+        "tofu validate.*",
+        "tofu plan.*",
+        "kubectl get.*",
+        "kubectl describe.*",
+        "docker ps.*",
+        "docker images.*",
+        "pwd",
+        "ls .*",
+        "cat.*",
+        "head .*",
+        "tail .*",
+        "find .*",
+        "grep .*",
+        "jq.*",
+        "yq.*",
+        "curl .*"
+      ]
+    },
+    "aws": {
+      "autoAllowReadonly": true
+    },
+    "use_subagent": {
+      "trustedAgents": []
+    }
+  },
+  "resources": [
+    "file://README.md",
+    "skill://~/.kiro/skills/**/SKILL.md"
+  ],
+  "includeMcpJson": false,
+  "keyboardShortcut": "ctrl+p",
+  "welcomeMessage": "Principal Engineer ready. Safe(r) agent with restricted file access."
+}

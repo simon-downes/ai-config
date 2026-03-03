@@ -56,6 +56,6 @@
     "skill://~/.kiro/skills/**/SKILL.md"
   ],
   "includeMcpJson": false,
-  "keyboardShortcut": "ctrl+p",
+  "keyboardShortcut": "ctrl+shift+p",
   "welcomeMessage": "Principal Engineer agent ready. Running in sandbox with full tool access."
 }
