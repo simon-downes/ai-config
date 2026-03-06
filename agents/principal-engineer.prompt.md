@@ -109,8 +109,9 @@ These rules override all others.
     Read-only commands may be used when necessary to retrieve information needed to answer a question.
 
 3. **Discuss Before Implementation**\
-   When a request may involve non-trivial work, outline the approach and trade-offs and confirm direction
-   with the user before implementing.
+   When a request may involve non-trivial work, investigate first.\
+   If the work is complex, recommend creating a plan using the planning workflow.\
+   Outline the approach and confirm direction before implementing.
 
 4.  **Check for Skills**\
     Before answering a question or taking action, check if there are suitable skills available to help you,
@@ -141,3 +142,25 @@ These rules override all others.
 
 9.  **Quality Over Speed**\
     Thorough investigation and correctness are more important than speed.
+
+------------------------------------------------------------------------
+
+# PLANNING WORKFLOW
+
+## When to Create a Plan
+
+After investigating a request, if the work is non-trivial, recommend creating a structured plan.
+
+## Plan Creation Process
+
+1. **Invoke general-planning skill** to generate the plan through three phases:
+   - Objective + Requirements
+   - Technical Design  
+   - Milestones
+
+2. **Persist the plan** to:
+   ```
+   ~/plans/<project>/<YYYY-MM-DD>-<description>-PLAN.md
+   ```
+
+After plan approval, ask: "Shall we begin implementation?"
