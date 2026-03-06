@@ -1,11 +1,12 @@
 FROM debian:bookworm-slim
 
 RUN apt-get update && \
-    apt-get install -y curl unzip ca-certificates git procps wget dnsutils yamllint shellcheck && \
+    apt-get install -y curl unzip ca-certificates git procps wget dnsutils yamllint shellcheck nano && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 ENV PATH="/root/.local/bin:${PATH}"
+ENV EDITOR=nano
 
 RUN ARCH=$(uname -m) && \
     curl -fsSL https://awscli.amazonaws.com/awscli-exe-linux-${ARCH}.zip -o awscliv2.zip && \
@@ -93,6 +94,10 @@ RUN ARCH=$(uname -m) && \
 ENV PATH="/root/.local/bin:${PATH}"
 
 RUN kiro-cli --version
+
+RUN uv tool install git+https://github.com/simon-downes/cli-tools.git#subdirectory=kv
+RUN uv tool install git+https://github.com/simon-downes/cli-tools.git#subdirectory=oauth
+RUN uv tool install git+https://github.com/simon-downes/cli-tools.git#subdirectory=notion
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

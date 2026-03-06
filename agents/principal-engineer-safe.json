@@ -2,6 +2,7 @@
   "name": "principal-engineer-safe",
   "description": "Principal engineer agent with restricted file access for use outside sandbox",
   "prompt": "file://./principal-engineer.prompt.md",
+  "model": "claude-sonnet-4.5",
   "mcpServers": {
     "aws-knowledge": {
       "command": "uvx",

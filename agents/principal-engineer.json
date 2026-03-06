@@ -2,6 +2,7 @@
   "name": "principal-engineer",
   "description": "General-purpose engineering agent designed for sandbox execution with broad capabilities and minimal restrictions",
   "prompt": "file://./principal-engineer.prompt.md",
+  "model": "claude-sonnet-4.5",
   "mcpServers": {
     "aws-knowledge": {
       "command": "uvx",
