@@ -1,7 +1,10 @@
 #!/bin/bash
 set -eo pipefail
 
-# Colors
+#==============================================================================
+# Constants
+#==============================================================================
+
 RED='\033[0;91m'
 GREEN='\033[0;92m'
 YELLOW='\033[0;93m'
@@ -10,14 +13,19 @@ MAGENTA='\033[0;95m'
 CYAN='\033[0;96m'
 RESET='\033[0m'
 
+#==============================================================================
+# Help & Info
+#==============================================================================
+
 show_help() {
     cat << EOF
-Usage: kiro [OPTIONS] [DIRECTORY] [COMMAND...]
+Usage: kiro [OPTIONS] [DIRECTORY]
 
 Run kiro-cli in a sandboxed Docker container with isolated filesystem access.
 
 OPTIONS:
     --help              Show this help message
+    --local             Run kiro-cli directly without Docker sandbox
     --rebuild           Force rebuild of the Docker image
     --shell             Drop into bash shell instead of running kiro-cli
     --list              List all running sandbox sessions
@@ -25,16 +33,15 @@ OPTIONS:
 
 ARGUMENTS:
     DIRECTORY           Working directory to mount (defaults to current directory)
-    COMMAND             Arguments to pass to kiro-cli (if not using --shell)
 
 EXAMPLES:
-    kiro                        Start kiro-cli in current directory with resume prompt
-    kiro chat                   Start kiro-cli chat without resume prompt
+    kiro                        Start kiro-cli chat in current directory
+    kiro --local                Run kiro-cli directly on host (no sandbox)
     kiro --shell                Open bash shell in sandbox
     kiro /path/to/project       Start kiro-cli in specified directory
     kiro --list                 Show running sessions
     kiro --stop dev-ai-config   Stop the dev-ai-config session
-    kiro --rebuild              Rebuild image and start kiro-cli
+    kiro --rebuild              Rebuild the Docker image
 
 ENVIRONMENT VARIABLES:
     GH_TOKEN            GitHub personal access token for gh CLI authentication
@@ -44,9 +51,15 @@ NOTES:
     - Only one session per directory can run at a time
     - Credentials and conversations are shared with host kiro-cli
     - Working directory must be under your home directory
+    - If under ~/dev, the first subdirectory is used as project root
+    - Always runs 'kiro-cli chat --resume-picker' in sandbox mode
 
 EOF
 }
+
+#==============================================================================
+# Session Management
+#==============================================================================
 
 list_sessions() {
     echo -e "${BLUE}Running sandbox sessions:${RESET}"
@@ -67,13 +80,6 @@ stop_session() {
     fi
 }
 
-generate_session_name() {
-    local work_dir="$1"
-    local home_dir="$2"
-    local relative_path="${work_dir#$home_dir/}"
-    echo "$relative_path" | tr '[:upper:]/ ' '[:lower:]--' | sed 's/--*/-/g' || true
-}
-
 check_session_running() {
     local session_name="$1"
     if docker ps --format '{{.Names}}' | grep -q "^kiro-sandbox-${session_name}$" || false; then
@@ -83,97 +89,206 @@ check_session_running() {
     fi
 }
 
+generate_session_name() {
+    local work_dir="$1"
+    local home_dir="$2"
+    local relative_path="${work_dir#$home_dir/}"
+    echo "$relative_path" | tr '[:upper:]/ ' '[:lower:]--' | sed 's/--*/-/g' || true
+}
+
+#==============================================================================
+# Project Detection
+#==============================================================================
+
+detect_project_dir() {
+    local work_dir="$1"
+    local home_dir="$2"
+    local dev_dir="$home_dir/dev"
+    
+    # Check if under ~/dev
+    if [[ "$work_dir" == "$dev_dir"/* ]]; then
+        # Extract first subdirectory under ~/dev
+        local relative="${work_dir#$dev_dir/}"
+        local project_name="${relative%%/*}"
+        echo "$dev_dir/$project_name"
+    else
+        echo "$work_dir"
+    fi
+}
+
+#==============================================================================
+# Image Management
+#==============================================================================
+
 build_image() {
     if ! docker image inspect kiro-sandbox &>/dev/null; then
         echo -e "${BLUE}Building kiro-sandbox image...${RESET}"
-        docker build -t kiro-sandbox . || exit 1
+        docker build -t kiro-sandbox "$(dirname "$0")" || exit 1
     fi
+}
+
+rebuild_image() {
+    echo -e "${BLUE}Rebuilding kiro-sandbox image...${RESET}"
+    docker build -t kiro-sandbox . || exit 1
+    echo -e "${GREEN}Image rebuilt successfully${RESET}"
+}
+
+#==============================================================================
+# Execution Modes
+#==============================================================================
+
+run_local() {
+    local work_dir="$1"
+    echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+    echo -e "${BLUE}Mode:${RESET}      ${MAGENTA}Local${RESET} (no sandbox)"
+    echo -e "${BLUE}Directory:${RESET} ${MAGENTA}$work_dir${RESET}"
+    echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+    echo
+    cd "$work_dir"
+    exec kiro-cli chat --resume-picker
 }
 
 run_container() {
     local session_name="$1"
     local work_dir="$2"
-    local shell_mode="$3"
-    shift 3
-    local cmd_args="$@"
-
-    local entrypoint_override=""
-    local final_cmd=""
-
-    if [ "$shell_mode" = true ]; then
-        entrypoint_override="--entrypoint /bin/bash"
-    else
-        final_cmd="$cmd_args"
-    fi
+    local shell_mode="${3:-0}"
+    
+    local mode_label="Sandbox"
+    [ "$shell_mode" = "1" ] && mode_label="Shell"
+    
+    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+    echo -e "${BLUE}Mode:${RESET}      ${MAGENTA}$mode_label${RESET}"
+    echo -e "${BLUE}Directory:${RESET} ${MAGENTA}$work_dir${RESET}"
+    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+    echo
 
     docker run --rm -it \
         --name "kiro-sandbox-${session_name}" \
-        $entrypoint_override \
-        -w "/opt/$session_name" \
+        -w "$work_dir" \
         -v "$HOME/.kiro:/root/.kiro" \
         -v "$HOME/Library/Application Support/kiro-cli:/root/.local/share/kiro-cli" \
-        -v "$work_dir:/opt/$session_name" \
+        -v "$HOME/.cli-tools:/root/.cli-tools" \
+        -v "$work_dir:$work_dir" \
         -e "SESSION_NAME=$session_name" \
+        -e "SHELL_MODE=$shell_mode" \
         ${GH_TOKEN:+-e "GH_TOKEN=$GH_TOKEN"} \
-        kiro-sandbox $final_cmd
+        kiro-sandbox
 }
 
-# Parse flags
-SHELL_MODE=false
+#==============================================================================
+# Argument Parsing
+#==============================================================================
 
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --help)
+parse_args() {
+    MODE="sandbox"  # default: sandbox, local, shell, list, stop, rebuild, help
+    WORK_DIR_ARG=""
+    STOP_TARGET=""
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --help)
+                MODE="help"
+                return
+                ;;
+            --local)
+                MODE="local"
+                shift
+                ;;
+            --shell)
+                MODE="shell"
+                shift
+                ;;
+            --list)
+                MODE="list"
+                return
+                ;;
+            --stop)
+                MODE="stop"
+                STOP_TARGET="$2"
+                return
+                ;;
+            --rebuild)
+                MODE="rebuild"
+                return
+                ;;
+            --*)
+                echo -e "${RED}Error: Unknown option ${MAGENTA}$1${RESET}"
+                echo
+                show_help
+                exit 1
+                ;;
+            *)
+                # First non-flag arg could be directory
+                if [ -z "$WORK_DIR_ARG" ] && [ -d "$1" ]; then
+                    WORK_DIR_ARG="$1"
+                    shift
+                else
+                    echo -e "${RED}Error: Unknown argument ${MAGENTA}$1${RESET}"
+                    echo
+                    show_help
+                    exit 1
+                fi
+                ;;
+        esac
+    done
+}
+
+#==============================================================================
+# Main Execution
+#==============================================================================
+
+main() {
+    parse_args "$@"
+
+    # Handle modes that don't need project setup
+    case "$MODE" in
+        help)
             show_help
             exit 0
             ;;
-        --rebuild)
-            echo -e "${BLUE}Rebuilding kiro-sandbox image...${RESET}"
-            docker build -t kiro-sandbox . || exit 1
-            echo -e "${GREEN}Image rebuilt successfully${RESET}"
-            exit 0
-            ;;
-        --shell)
-            SHELL_MODE=true
-            shift
-            ;;
-        --list)
+        list)
             list_sessions
             exit 0
             ;;
-        --stop)
-            stop_session "$2"
+        stop)
+            stop_session "$STOP_TARGET"
             exit 0
             ;;
-        --*)
-            echo -e "${RED}Error: Unknown option ${MAGENTA}$1${RESET}"
-            echo
-            show_help
-            exit 1
-            ;;
-        *)
-            break
+        rebuild)
+            rebuild_image
+            exit 0
             ;;
     esac
-done
 
-# Determine work directory
-WORK_DIR="${1:-$(pwd)}"
-WORK_DIR="$(cd "$WORK_DIR" && pwd)"
-HOME_DIR="$HOME"
+    # Resolve project directory
+    local work_dir="${WORK_DIR_ARG:-$(pwd)}"
+    work_dir="$(cd "$work_dir" && pwd)"
+    local project_dir=$(detect_project_dir "$work_dir" "$HOME")
 
-# Verify work directory is under home directory
-if [[ "$WORK_DIR" != "$HOME_DIR"* ]]; then
-    echo -e "${RED}Error: Work directory must be under home directory ${MAGENTA}$HOME_DIR${RESET}"
-    exit 1
-fi
+    # Validate project directory for sandbox modes
+    if [[ "$MODE" != "local" ]] && [[ "$project_dir" != "$HOME"* ]]; then
+        echo -e "${RED}Error: Work directory must be under home directory ${MAGENTA}$HOME${RESET}"
+        exit 1
+    fi
 
-# Generate session name and check if already running
-SESSION_NAME=$(generate_session_name "$WORK_DIR" "$HOME_DIR")
-check_session_running "$SESSION_NAME"
+    # Execute based on mode
+    case "$MODE" in
+        local)
+            run_local "$project_dir"
+            ;;
+        shell)
+            local session_name=$(generate_session_name "$project_dir" "$HOME")
+            check_session_running "$session_name"
+            build_image
+            run_container "$session_name" "$project_dir" 1
+            ;;
+        sandbox)
+            local session_name=$(generate_session_name "$project_dir" "$HOME")
+            check_session_running "$session_name"
+            build_image
+            run_container "$session_name" "$project_dir" 0
+            ;;
+    esac
+}
 
-# Build image if needed
-build_image
-
-# Run container
-run_container "$SESSION_NAME" "$WORK_DIR" "$SHELL_MODE" "${@:2}"
+main "$@"
