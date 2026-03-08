@@ -1,6 +1,6 @@
 ---
 name: lang-terraform-expertise
-description: Standards for writing maintainable Terraform/OpenTofu infrastructure code. Use when working with .tf files, creating infrastructure, or when Terraform/OpenTofu is mentioned.
+description: Standards for writing maintainable Terraform/OpenTofu infrastructure code and guided workflow for creating new Terraform modules. Use when working with .tf files, creating infrastructure, creating or scaffolding Terraform modules, or when Terraform/OpenTofu is mentioned.
 ---
 
 # Terraform/OpenTofu Coding Standards
@@ -46,6 +46,8 @@ Examples: `main.tf`, `lambda-processor.tf`, `api-gateway.tf`
 **`providers.tf`** - MUST exist in every Terraform project
 - MUST contain `terraform` and `provider` blocks
 - MUST NOT contain any other block types
+- MUST specify provider versions using `~> <MAJOR>.<MINOR>` constraint
+- Always check web for latest _stable_ version (training data may be outdated)
 
 **`README.md`** - MUST exist in every Terraform project
 - Documents module/project purpose and usage
@@ -358,6 +360,118 @@ resource "aws_iam_role_policy_attachment" "processor_dynamodb" {
   policy_arn = aws_iam_policy.processor_dynamodb.arn
 }
 ```
+
+## Module Creation Workflow
+
+When the user requests creating a new Terraform module, follow this guided process.
+
+### 1. Discover Module Collection
+
+**Find the module collection location:**
+- Check existing context for module collection references
+- Read README.md in current directory for collection information
+- If not found, ask user for collection location
+
+**Read collection conventions:**
+- Parse the collection's README for local patterns (naming, structure, versioning, etc.)
+- Note existing module patterns for consistency
+
+### 2. Gather Requirements
+
+**Module focus** - Confirm the primary resource/service (e.g., S3 bucket, Lambda function)
+
+**Initial features** - User will specify starting feature set
+
+**Suggest additional features** - Based on the resource type, suggest up to 5 common features the user may have missed:
+- Focus on frequently needed capabilities for that resource type
+- Present as optional additions
+- Let user accept/reject before proceeding
+
+**Secondary functionality** - Ask about cross-cutting concerns:
+- Monitoring/observability (CloudWatch, Datadog, etc.)
+- Backup/disaster recovery
+- Security integrations
+- Cost optimization features
+
+### 3. Establish Opinionated Defaults
+
+Ask about non-negotiable settings and sensible defaults for this resource type:
+- **Security baselines** - Settings that enforce security (e.g., "Should S3 buckets allow public access?")
+- **Best practices** - Organizational standards to enforce (e.g., "Should Aurora always use IAM auth?")
+- **Hardcoded vs. configurable** - Which settings should be opinionated vs. exposed as variables
+
+**Examples of opinionated settings:**
+- S3: Public access block always enabled, versioning default
+- Aurora: IAM auth enabled, copy tags to snapshots, use local port
+- Lambda: Architecture (arm64 vs x86_64), runtime version policy
+
+**Distinction:**
+- **Opinionated/hardcoded** - Security, compliance, organizational standards
+- **Configurable** - Legitimate use-case variations (retention periods, instance sizes, feature flags)
+
+### 4. Present Approach Summary
+
+Before generating code, present a concise summary covering:
+- Module scope and primary resources
+- Confirmed feature set
+- Opinionated defaults and hardcoded settings
+- Secondary functionality to include
+- Key design decisions and service-specific best practices
+- How it aligns with collection conventions
+
+**Wait for approval before proceeding.**
+
+### 5. Generate Module Code
+
+Create module following:
+- **YAGNI principle** - Only implement the specific features discussed, not every possible use case
+- **Opinionated by default** - Hardcode security and compliance settings, expose only legitimate variations
+- **Collection consistency** - Match existing modules' structure, naming, and patterns
+- **Service best practices** - Apply AWS/provider-specific recommendations
+- **Standard structure** - Follow file organization rules from this skill
+
+**Typical module files:**
+- `README.md` - Usage documentation with examples
+- `providers.tf` - Provider requirements
+- `variables.tf` - All input variables
+- `outputs.tf` - All outputs
+- `main.tf` or resource-specific files - Resource definitions
+- `locals.tf` - Local values (if needed)
+
+### 6. Review and Iterate
+
+Present summary of what was created:
+- Files generated
+- Key variables and outputs
+- Notable implementation decisions
+
+Ask: "Does this look correct?"
+
+Iterate based on feedback until approved.
+
+### Key Principles
+
+- **Simplicity over generality** - Build for the specific use case, not every possible scenario
+- **Opinionated by default** - Enforce security and standards, expose only necessary configuration
+- **Consistency** - Match existing collection patterns
+- **Clarity** - Clear variable names, comprehensive descriptions, usage examples
+
+## Module Versioning
+
+Terraform modules MUST follow semantic versioning (semver: MAJOR.MINOR.PATCH).
+
+**Version bumps based on conventional commit types:**
+- `major:` → MAJOR version bump (breaking changes)
+- `feat:` → MINOR version bump (new functionality, backward compatible)
+- `fix:` → PATCH version bump (bug fixes, backward compatible)
+- `refactor:`, `docs:`, `chore:` → PATCH version bump (if released)
+
+**Commit format follows tool-git-github skill conventions.**
+
+**Examples:**
+- `feat: add encryption support` → 1.2.0 → 1.3.0
+- `fix: correct IAM policy syntax` → 1.2.0 → 1.2.1
+- `major: remove deprecated variables` → 1.2.0 → 2.0.0
 
 ## Good vs Bad Examples
 
