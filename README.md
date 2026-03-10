@@ -1,96 +1,52 @@
-# AI Config
+# Agent Workspace
 
-Personal AI tooling configuration for Kiro CLI, optimized for platform engineering workflows.
+Personal AI-assisted coding workflow tooling for Kiro CLI.
 
 ## Overview
 
-This repository contains custom agent configurations and skills for use with Kiro CLI, providing:
-- Specialized agent personas with tailored tool access and workflows
-- Progressive-loading skills for language-specific and general coding standards
-- Installation tooling for easy deployment
+This workspace provides the configuration, agents, and skills that power my AI-assisted development workflow. It consists of three repositories that work together:
 
-## Structure
+- **agent-workspace** (this repo) - Agent configurations, skills, and installation tooling
+- **agent-kit** - CLI utilities for development workflows (key-value storage, OAuth, Notion integration)
+- **agent-executor** - Unified execution hub for running AI tools in isolated Docker containers
 
-- **agents/** - Custom agent configurations
-  - `principal-engineer` - Primary agent for sandbox use with broad capabilities
-  - `principal-engineer-safe` - Production-safe variant with restricted access
-  - `platform-engineering` - Platform-focused agent with AWS/Terraform expertise
-- **skills/** - Reusable knowledge modules
-  - `lang-terraform-expertise` - Terraform/OpenTofu coding standards
-  - `lang-python-expertise` - Python coding standards with modern tooling
-  - `general-coding-expertise` - Language-agnostic principles and practices
-  - `tool-git-github` - Git and GitHub workflows
-- **sandbox/** - Docker-based sandbox environment for Kiro CLI
-- **install.sh** - Installation script to deploy agents and skills to ~/.kiro/
+## Repository Structure
 
-## Installation
+The `agent-kit` and `agent-executor` repositories should be checked out as subdirectories alongside this main repository:
 
-Run the installation script to copy agents and skills to your Kiro configuration:
-
-```bash
-./install.sh
+```
+agent-workspace/
+├── agent-kit/          # git clone https://github.com/simon-downes/agent-kit
+├── agent-executor/     # git clone https://github.com/simon-downes/agent-executor
+├── agents/             # Custom agent configurations
+├── skills/             # Reusable knowledge modules
+└── install.sh          # Installation script
 ```
 
-This copies:
-- Agents to `~/.kiro/agents/`
-- Skills to `~/.kiro/skills/`
+Both subdirectories are git-ignored to keep the repositories logically separate.
 
-## Agents
+## Components
 
-### principal-engineer
+### Agents
 
-Sandbox-only agent with unrestricted tool access, designed for isolated execution. Features iteration-based workflow, progressive enhancement, and broad capabilities (file ops, shell, AWS, web, code intelligence). Keyboard shortcut: `ctrl+p`
+Custom agent configurations with specialized tool access and workflows:
+- `principal-engineer` - Sandbox-only agent with unrestricted capabilities
+- `principal-engineer-safe` - Production-safe variant with restricted access
+- `platform-engineering` - Platform-focused agent for AWS/infrastructure work
 
-**⚠️ Only use in sandbox - unrestricted permissions make it unsafe for direct use.**
+### Skills
 
-### principal-engineer-safe
+Progressive-loading knowledge modules that activate based on context:
+- Language-specific expertise (Terraform, Python)
+- General coding principles and practices
+- Tool-specific workflows (Git/GitHub)
+- Planning, implementation, and review workflows
 
-Production-safe variant of principal-engineer with restricted file and command access. Safe for local use with controlled permissions (specific file extensions, read-only AWS operations, safe shell commands). Keyboard shortcut: `ctrl+p`
+### Installation
 
-### platform-engineering
+Run `./install.sh` to deploy agents and skills to `~/.kiro/`.
 
-Platform-focused agent for AWS/infrastructure work with restricted tool access.
+## Related Projects
 
-## Skills
-
-Skills use progressive disclosure - metadata loads at startup, full content loads on-demand when relevant.
-
-### lang-terraform-expertise
-Terraform/OpenTofu coding standards including file organization, naming conventions, resource patterns, and tagging.
-
-### lang-python-expertise
-Python coding standards with modern tooling (uv, Black, Ruff, pytest), type hints, and idiomatic patterns.
-
-### general-coding-expertise
-Language-agnostic principles (SOLID, DRY, YAGNI, KISS) and practices for maintainable code.
-
-### tool-git-github
-Git and GitHub workflows including branch naming, commit standards, PR operations, code review, and cross-repo queries.
-
-## Sandbox
-
-Docker-based sandbox environment for Kiro CLI with:
-- Isolated filesystem access
-- Pre-configured with principal-engineer agent
-- Essential platform engineering tools (OpenTofu, AWS CLI, etc.)
-- Automatic conversation resumption
-
-See [sandbox/README.md](sandbox/README.md) for details.
-
-## Usage
-
-After installation, agents and skills are available globally:
-
-```bash
-# Use principal-engineer-safe agent (local, production-safe)
-kiro-cli chat --agent principal-engineer-safe
-
-# Use platform-engineering agent
-kiro-cli chat --agent platform-engineering
-
-# Use principal-engineer agent (via sandbox only)
-cd sandbox
-./kiro
-```
-
-Skills activate automatically based on context (e.g., working with .tf or .py files).
+- [agent-kit](./agent-kit/README.md) - CLI toolkit for development workflows
+- [agent-executor](./agent-executor/README.md) - Sandboxed execution environment for AI tools

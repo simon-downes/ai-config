@@ -1,6 +1,6 @@
 {
-  "name": "principal-engineer",
-  "description": "General-purpose engineering agent designed for sandbox execution with broad capabilities and minimal restrictions",
+  "name": "principal-engineer-safe",
+  "description": "Principal engineer agent with restricted file access for use outside sandbox",
   "prompt": "file://./principal-engineer.prompt.md",
   "model": "claude-sonnet-4.5",
   "mcpServers": {
@@ -30,16 +30,14 @@
   ],
   "allowedTools": [
     "read",
-    "write",
     "glob",
     "grep",
-    "shell",
-    "aws",
+    "introspect",
+    "code",
     "web_search",
     "web_fetch",
     "use_subagent",
-    "introspect",
-    "code",
+    "aws",
     "@aws-knowledge",
     "@fetch"
   ],
@@ -48,6 +46,74 @@
     "@aws-knowledge": "awsdocs"
   },
   "toolsSettings": {
+    "write": {
+      "allowedPaths": [
+        "**/*.tf",
+        "**/*.tfvars",
+        "**/*.hcl",
+        "**/*.rego",
+        "**/*.md",
+        "**/*.rst",
+        "**/*.adoc",
+        "**/*.yaml",
+        "**/*.yml",
+        "**/*.toml",
+        "**/*.json",
+        "**/*.py",
+        "**/*.php",
+        "**/*.sh",
+        "**/*.js",
+        "**/*.ts",
+        "**/*.scss",
+        "**/*.css",
+        "**/*.conf",
+        "**/*.ini",
+        "**/*.properties",
+        "**/*.xml",
+        "**/*.sql",
+        "**/.github/**/*.yml",
+        "**/.gitlab-ci.yml",
+        "**/Jenkinsfile",
+        "**/.circleci/**/*.yml",
+        "**/Dockerfile*",
+        "**/.env.example"
+      ]
+    },
+    "shell": {
+      "autoAllowReadonly": true,
+      "allowedCommands": [
+        "uv .*",
+        "npm run.*",
+        "php .*",
+        "python .*",
+        "git status.*",
+        "git log.*",
+        "git diff.*",
+        "git show.*",
+        "git branch.*",
+        "git fetch.*",
+        "tofu fmt.*",
+        "tofu validate.*",
+        "tofu plan.*",
+        "kubectl get.*",
+        "kubectl describe.*",
+        "docker ps.*",
+        "docker images.*",
+        "pwd",
+        "ls .*",
+        "cat.*",
+        "head .*",
+        "tail .*",
+        "find .*",
+        "grep .*",
+        "jq.*",
+        "yq.*",
+        "curl .*"
+      ]
+    },
+    "aws": {
+      "autoAllowReadonly": true
+    },
     "use_subagent": {
       "trustedAgents": []
     }
@@ -57,6 +123,6 @@
     "skill://~/.kiro/skills/**/SKILL.md"
   ],
   "includeMcpJson": false,
-  "keyboardShortcut": "ctrl+shift+p",
-  "welcomeMessage": "Principal Engineer agent ready. Running in sandbox with full tool access."
+  "keyboardShortcut": "ctrl+p",
+  "welcomeMessage": "Principal Engineer ready. Safe(r) agent with restricted file access."
 }

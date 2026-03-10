@@ -1,0 +1,62 @@
+{
+  "name": "principal-engineer",
+  "description": "General-purpose engineering agent designed for sandbox execution with broad capabilities and minimal restrictions",
+  "prompt": "file://./principal-engineer.prompt.md",
+  "model": "claude-sonnet-4.5",
+  "mcpServers": {
+    "aws-knowledge": {
+      "command": "uvx",
+      "args": ["fastmcp", "run", "https://knowledge-mcp.global.api.aws"]
+    },
+    "fetch": {
+      "command": "uvx",
+      "args": ["mcp-server-fetch"]
+    }
+  },
+  "tools": [
+    "read",
+    "write",
+    "glob",
+    "grep",
+    "shell",
+    "aws",
+    "web_search",
+    "web_fetch",
+    "use_subagent",
+    "introspect",
+    "code",
+    "@aws-knowledge",
+    "@fetch"
+  ],
+  "allowedTools": [
+    "read",
+    "write",
+    "glob",
+    "grep",
+    "shell",
+    "aws",
+    "web_search",
+    "web_fetch",
+    "use_subagent",
+    "introspect",
+    "code",
+    "@aws-knowledge",
+    "@fetch"
+  ],
+  "toolAliases": {
+    "@fetch/fetch": "fetch",
+    "@aws-knowledge": "awsdocs"
+  },
+  "toolsSettings": {
+    "use_subagent": {
+      "trustedAgents": []
+    }
+  },
+  "resources": [
+    "file://README.md",
+    "skill://~/.kiro/skills/**/SKILL.md"
+  ],
+  "includeMcpJson": false,
+  "keyboardShortcut": "ctrl+shift+p",
+  "welcomeMessage": "Principal Engineer agent ready. Running in sandbox with full tool access."
+}
