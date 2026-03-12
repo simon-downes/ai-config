@@ -1,5 +1,5 @@
 ---
-name: lang-python-expertise
+name: policy-lang-python
 description: Standards for writing quality Python code with modern tooling. Use when working with .py files, Python projects, or when Python is mentioned.
 ---
 

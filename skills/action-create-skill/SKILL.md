@@ -1,5 +1,5 @@
 ---
-name: skill-creator
+name: action-create-skill
 description: >
   Create, improve, or refactor Kiro/Agent skills by generating complete skill folders including SKILL.md, references, examples, and clear workflows. This skill ensures skills follow best practices for routing, distinctiveness, concise instructions, and maintainable structure.
   Use this skill when creating a new skill, improving an existing SKILL.md, fixing a skill that does not trigger reliably, refactoring large skills into maintainable structures, or ensuring a skill library follows consistent conventions and avoids overlap between skills.

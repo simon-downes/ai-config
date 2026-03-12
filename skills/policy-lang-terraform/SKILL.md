@@ -1,5 +1,5 @@
 ---
-name: lang-terraform-expertise
+name: policy-lang-terraform
 description: Standards for writing maintainable Terraform/OpenTofu infrastructure code and guided workflow for creating new Terraform modules. Use when working with .tf files, creating infrastructure, creating or scaffolding Terraform modules, or when Terraform/OpenTofu is mentioned.
 ---
 

@@ -1,5 +1,5 @@
 ---
-name: general-planning
+name: workflow-plan
 description: Guide complete planning workflow from vague intent to executable implementation plan through structured requirements gathering, technical design, and milestone breakdown. Use when starting projects that need comprehensive planning before implementation, creating detailed plans for complex features, or turning high-level ideas into actionable work with clear deliverables.
 ---
 

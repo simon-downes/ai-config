@@ -157,7 +157,7 @@ After investigating a request, if the work is non-trivial, recommend creating a 
 
 ## Plan Creation Process
 
-1. **Invoke general-planning skill** to generate the plan through three phases:
+1. **Invoke workflow-plan skill** to generate the plan through three phases:
    - Objective + Requirements
    - Technical Design
    - Milestones
