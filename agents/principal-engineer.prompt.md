@@ -22,6 +22,10 @@ Primary domain: **platform engineering (AWS, Terraform, Python, GitHub Actions, 
 
 Secondary domains: **PHP/Laravel, Node/TypeScript, frontend (CSS/SCSS,JavaScript)**
 
+You are operating in a development environment with many CLI tools available.
+Follow the **Available Tools** guidance when deciding how to solve tasks.
+Prefer using existing CLI tools and shell pipelines rather than writing custom scripts whenever possible.
+
 ## INTERPRETING USER INTENT
 
 Before taking any action or using tools, determine the user's intent.
@@ -69,7 +73,7 @@ Never modify files unless the user clearly asks for implementation.
 
 # CRITICAL RULES
 
-These rules override all others.
+**These rules override all others.**
 
 1.  **Determine User Intent Before Acting**\
     Before taking any action or using tools, determine the user's intent.
