@@ -1,482 +1,253 @@
 ---
 name: action-create-skill
 description: >
-  Create, improve, or refactor Kiro/Agent skills by generating complete skill folders including SKILL.md, references, examples, and clear workflows. This skill ensures skills follow best practices for routing, distinctiveness, concise instructions, and maintainable structure.
-  Use this skill when creating a new skill, improving an existing SKILL.md, fixing a skill that does not trigger reliably, refactoring large skills into maintainable structures, or ensuring a skill library follows consistent conventions and avoids overlap between skills.
+  Create, improve, or refactor Kiro/Agent skills by generating complete skill folders
+  with SKILL.md, references, examples, and clear workflows. Use this skill when creating
+  a new skill, improving an existing SKILL.md, fixing a skill that does not trigger reliably,
+  refactoring large skills into maintainable structures, or ensuring a skill library follows
+  consistent conventions and avoids overlap between skills.
 ---
 
 # Purpose
 
-You design high-quality **Kiro-compatible skills**.
-
-Your job is to generate or improve skills that:
-
-- trigger reliably
-- have clear scope
-- avoid overlap with other skills
-- remain small and maintainable
-- are easy for the model to follow
-
-Skills you produce should be **production-ready** and aligned with Kiro / Agent Skills conventions.
+Design and maintain high-quality Kiro-compatible skills that trigger reliably, have clear scope,
+avoid overlap, and remain maintainable.
 
 ---
 
-# Skill Creation Workflow
+# When to Use
 
-Follow this process whenever creating or updating a skill.
+- Creating a new skill from scratch
+- Improving or refactoring an existing SKILL.md
+- Fixing a skill that does not trigger reliably
+- Auditing a skill library for overlap or consistency issues
+
+# When Not to Use
+
+- Minor typo fixes or small wording tweaks (handle directly)
+- Changing skill behaviour that requires domain expertise you don't have (ask the user)
+
+---
+
+# Skill Layers
+
+Skills follow a layered naming convention. See [references/LAYERS.md](references/LAYERS.md) for
+full definitions and guidance on choosing the right layer.
+
+| Prefix       | Purpose                                              |
+|--------------|------------------------------------------------------|
+| `policy-*`   | Standards, conventions, heuristics                   |
+| `workflow-*` | Core agentic orchestration (plan → implement → review) |
+| `tool-*`     | Operational guidance for CLI tools and systems       |
+| `action-*`   | Self-contained tasks that produce a defined outcome  |
+
+---
+
+# Creation Workflow
+
+Follow this process when creating a new skill.
 
 ## 1. Determine operation mode
 
-Before starting, check if you're creating or modifying a skill:
-
 1. Check if a skill name is provided
-2. Check if `~/.kiro/skills/<skill-name>/` exists
-3. If exists: Load existing SKILL.md and enter **modification mode**
-4. If not exists: Enter **creation mode**
-
-In modification mode:
-- Preserve existing structure unless changes are requested
-- Update specific sections rather than regenerating everything
-- Maintain existing frontmatter fields unless changes are needed
-
-In creation mode:
-- Build the skill from scratch
-- Follow all steps below
-
----
+2. Check if `./skills/<skill-name>/SKILL.md` exists
+3. If exists → enter **modification mode** (see Modification Workflow below)
+4. If not → continue with creation
 
 ## 2. Understand the intent
 
 Determine:
+- What the skill helps the user achieve
+- Whether it generates an artifact or provides guidance
+- Expected inputs and outputs
+- Typical user requests that should activate the skill
 
-- what the skill helps the user achieve
-- whether it **generates an artifact** or **provides guidance**
-- the expected inputs and outputs
-- the typical user requests that should activate the skill
+**You must clarify before proceeding if:**
+- The primary outcome is unclear (what does the skill produce?)
+- It's unclear whether this is create vs modify
+- The appropriate layer is ambiguous
+- Multiple candidate skills could be the target
+- It's unclear whether the skill should produce an artifact or provide guidance
 
-Ask clarifying questions only if necessary.
+If none of these apply, proceed with reasonable assumptions and state them.
 
----
+## 3. Collision check
 
-## 3. Quick collision check
+Before building the skill, check for overlap with existing skills.
 
-Before investing effort in building the skill, check if it already exists or overlaps significantly with existing skills.
-
-**Purpose:** Avoid duplicate work and identify similar skills early.
-
-**Process:**
-
-1. Read skill names and descriptions from `~/.kiro/skills/**/SKILL.md`
+1. Read skill names and descriptions from `./skills/**/SKILL.md`
 2. Look for exact or near-exact matches
 3. Identify similar skills that might overlap
 
 **Decision points:**
+- Exact match → switch to modification mode
+- Similar skills exist → note them for distinctiveness optimisation (step 9)
+- Unique → proceed
 
-- If exact match exists → Consider switching to modification mode instead
-- If similar skills exist → Note them for later differentiation (step 11)
-- If unique → Proceed with creation
+**When overlap is found, apply these rules:**
+- Same intent + same output → modify the existing skill instead of creating a new one
+- Same intent + different output shape → split clearly by output type, or merge if the outputs are complementary
+- Substantial overlap in trigger phrases but different domains → rewrite descriptions until activation surfaces diverge
+- Partial overlap → narrow the new skill's scope to the non-overlapping area
 
-This is a lightweight check focused on avoiding wasted effort, not detailed positioning analysis.
+## 4. Classify the skill
 
----
+Determine the appropriate layer using [references/LAYERS.md](references/LAYERS.md).
 
-## 4. Determine the skill type
+If the skill spans multiple layers, consider splitting it into separate skills.
 
-Classify the skill before writing it.
+## 5. Structure the SKILL.md
 
-### Artifact-generating skill
+**Token budget:** Metadata ~100 tokens, SKILL.md body <5000 tokens / <500 lines.
 
-Produces a structured deliverable.
-
-Examples:
-
-- PRD generation
-- requirements gathering
-- architecture decision records
-- code review reports
-- test generation
-
-These skills **must define a clear output format.**
-
----
-
-### Workflow / guidance skill
-
-Guides the user through a process.
-
-Examples:
-
-- deployment process
-- onboarding flow
-- debugging procedure
-- Git workflow
-
-These should include **clear steps, rules, and examples**, but do not require a strict output schema.
-
----
-
-### Knowledge / reference skill
-
-Provides contextual documentation.
-
-Examples:
-
-- company GitHub conventions
-- architecture overview
-- coding standards
-
-These should prioritize **clear structure and examples** over output formatting.
-
----
-
-## 5. Ensure the skill has clear scope
-
-Each skill should own **one primary intent.**
-
-Avoid broad "Swiss army knife" skills.
-
-Bad:
-
-```
-product-management-helper
-```
-
-Good:
-
-```
-requirements-gathering
-prd-writer
-feature-prioritization
-```
-
-If multiple workflows exist, create **multiple skills.**
-
----
-
-## 6. Structure the SKILL.md content
-
-Skills should be structured clearly with progressive disclosure in mind.
-
-**Token budget guidelines:**
-- Metadata (name + description): ~100 tokens (loaded at startup)
-- SKILL.md body: <5000 tokens recommended, <500 lines (loaded on activation)
-- Reference files: loaded on demand
-
-**Typical sections:**
+**Standard sections:**
 ```
 Purpose
-When to use
-When not to use
-Workflow
-Output format (if applicable)
+When to Use / When Not to Use
+Workflow (numbered steps)
+Output Format (if artifact-producing)
 Examples
 ```
 
-Use **numbered workflows** whenever possible.
+Use numbered workflows — they make skills significantly more reliable.
 
-Example:
+If SKILL.md grows large, extract supporting material to `references/`.
 
-```
-Workflow
+See [references/FRONTMATTER.md](references/FRONTMATTER.md) for field specifications.
 
-1. Clarify the user's goal.
+## 6. Define output format (artifact-producing skills only)
 
-2. Gather required inputs.
+If the skill generates artifacts, define the output structure explicitly.
 
-3. Perform the main task.
+Guidance-focused skills do not need a strict output schema.
 
-4. Produce the final output.
-```
+## 7. Include at least one example
 
-Explicit workflows make skills more reliable.
+Examples significantly improve reliability. Show a realistic user request and the expected output or behaviour.
 
-If SKILL.md grows large, move supporting material to `references/`.
+## 8. Write the description
+
+The `description` field is the primary mechanism for skill activation.
+
+**Structure:**
+- Sentence 1: What the skill does and what it produces
+- Sentence 2+: "Use this skill when…" followed by common user intents
+
+**Guidelines:**
+- Target 100-200 words
+- Use clear verbs (generate, gather, review, analyze, scaffold)
+- Include multiple natural phrasings of the same intent
+- Avoid vague verbs (help, assist, support) and implementation details
+
+## 9. Distinctiveness optimisation
+
+Compare the description against skills noted in the collision check (step 3).
+
+Look for identical user intents, similar verbs/domains, or descriptions that would trigger on the same prompts.
+
+If overlap exists:
+- Emphasise unique aspects of the skill's workflow or outputs
+- Narrow scope or use more specific domain keywords
+- Every skill should own a distinct activation surface
+
+## 10. Validate
+
+Before presenting to the user, verify:
+- Frontmatter name matches the directory name
+- Frontmatter name meets constraints (1-64 chars, lowercase, hyphens, no leading/trailing/consecutive hyphens)
+- Description is 1-1024 characters
+- SKILL.md is under 500 lines
+- All referenced files exist
+
+## 11. Present for approval
+
+1. Show the complete folder structure
+2. Display full content of all files
+3. Wait for explicit approval before writing
+
+## 12. Write to ./skills/
+
+After approval:
+1. Create `./skills/<skill-name>/` if needed
+2. Write SKILL.md
+3. Create subdirectories only if they contain files (`references/`, `scripts/`, `assets/`)
+4. Set executable permissions on scripts (`chmod +x`)
+
+## 13. Confirm installation
+
+Report:
+- Skill location and files created/modified
+- 6-10 positive activation phrases (should trigger the skill)
+- 4 negative phrases (should not trigger the skill)
+- 2-3 ambiguous phrases with explanation of which skill should win and why
 
 ---
 
-## 7. Define output formats when appropriate
+# Modification Workflow
 
-If the skill generates artifacts, define the output structure.
+Follow this process when improving an existing skill.
 
-Example:
-```
-## Output format
-# Problem statement
-# Scope
-# User stories
-# Acceptance criteria
-# Open questions
-```
+## 1. Load and understand
 
-Do not require structured outputs for **knowledge or documentation skills.**
+1. Read the existing SKILL.md and any references
+2. Understand the current structure, scope, and intent
+3. Identify what the user wants changed
+
+## 2. Assess the change
+
+Determine if this is:
+- **Targeted update** — change specific sections, preserve everything else
+- **Restructure** — significant reorganisation (treat as creation with existing content as input)
+
+For targeted updates, preserve existing structure and only modify affected sections.
+
+## 3. Apply changes
+
+Make the requested changes. For restructures, follow the creation workflow from step 5 onwards, using existing content as the starting point.
+
+## 4. Validate
+
+Run the same validation checks as creation step 10.
+
+## 5. Present for approval
+
+Show the updated content. For restructures, include a change summary:
+- Files changed, added, or removed
+- Sections modified and why
+- Any activation behaviour changes (description or trigger phrase changes)
+- Compatibility risks (renamed references, changed output format, narrowed scope)
+
+For targeted updates, highlight the specific changes.
+
+Wait for explicit approval before writing.
 
 ---
 
-## 8. Structure supporting directories
+# Supporting Directories
 
 ### scripts/
 
-Contains executable code that agents can run.
+Executable code that agents can run.
 
-**Language requirements:**
-- You MUST use Python or Bash unless there's a strong reason otherwise
-- Python scripts MUST use uv inline dependency format if dependencies are needed:
-
-```python
-#!/usr/bin/env python3
-# /// script
-# dependencies = [
-#   "requests<3",
-#   "rich",
-# ]
-# ///
-
-import requests
-# ... rest of script
-```
-
-**Script standards:**
-- Include shebang line (`#!/usr/bin/env python3` or `#!/usr/bin/env bash`)
-- Be self-contained with dependencies declared inline
-- Include helpful error messages
-- Handle edge cases gracefully
-
----
+- MUST use Python or Bash
+- Python scripts MUST use uv inline dependency format if dependencies are needed
+- Include shebang line, helpful error messages, and edge case handling
 
 ### references/
 
-Contains additional documentation loaded on demand:
-
-- `REFERENCE.md` - Detailed technical reference
-- `FORMS.md` - Form templates or structured data formats
-- Domain-specific files (`finance.md`, `legal.md`, etc.)
-
-Keep individual reference files focused. Agents load these on demand, so smaller files mean less context usage.
-
-**File reference patterns:**
-- Use relative paths from skill root: `[reference guide](references/REFERENCE.md)`
-- Keep references one level deep from SKILL.md
-- Avoid deeply nested reference chains
-
----
+Additional documentation loaded on demand. Keep files focused — smaller files mean less context usage.
 
 ### assets/
 
-Contains static resources:
-
-- Templates (document templates, configuration templates)
-- Images (diagrams, examples)
-- Data files (lookup tables, schemas)
-
----
-
-## 9. Include at least one example
-
-Examples significantly improve reliability.
-
-Example:
-
-```
-User request:
-"Help me gather requirements for a login system."
-
-Output:
-<requirements document>
-```
-
-Examples clarify both intent and expected behavior.
-
----
-
-## 10. Write a high-quality description
-
-The `description` field is the **primary mechanism used for skill activation.**
-
-Now that you've built the skill and understand what it does, write a description that accurately represents it.
-
-**Constraints:**
-- Must be 1-1024 characters (non-empty)
-- Should target 100-200 words for optimal matching
-- Focus on **user intent**, not implementation
-- Include realistic request phrases users might type
-
-**Structure:**
-
-Sentence 1:
-Describe **what the skill does and what it produces or explains.**
-
-Sentence 2+:
-Include **"Use this skill when…"** followed by common user intents.
-
-**Good descriptions include:**
-- Clear verbs (generate, gather, review, analyze, scaffold)
-- Domain keywords
-- Multiple natural phrasings of the same intent
-- Specific keywords that help agents identify relevant tasks
-
-**Avoid:**
-- Vague verbs (help, assist, support)
-- Internal implementation details
-- Overly generic descriptions
-
-**Example:**
-
-```
-Review pull requests for code quality, security issues, and test coverage. Use when reviewing PRs or preparing code for review.
-```
-
-Descriptions compete with other skills for activation, so they must be **distinctive and recognizable.**
-
----
-
-## 11. Distinctiveness optimization
-
-Now that you have a description, optimize it for positioning against similar skills.
-
-**Purpose:** Ensure the skill has a distinct activation surface and doesn't overlap with existing skills.
-
-**Process:**
-
-1. Review skills noted during the quick collision check (step 3)
-2. Read their full descriptions if needed
-3. Compare the proposed description for overlap
-
-Look for:
-
-- identical user intents
-- similar verbs and domains
-- descriptions that would trigger on the same prompts
-
-**If overlap exists:**
-
-- Emphasize unique aspects of your skill's workflow or outputs
-- Adjust wording to highlight differentiators
-- Narrow the scope if necessary
-- Use more specific domain keywords
-
-Every skill should own a **distinct activation surface.**
-
-This is SEO optimization - you're refining the marketing copy to stand out in the skill marketplace.
-
----
-
-## 12. Write complete frontmatter
-
-All skills require YAML frontmatter with these fields:
-
-### Required fields
-
-**name** (required)
-- Must be 1-64 characters
-- Lowercase letters, numbers, and hyphens only
-- Must not start or end with hyphen
-- Must not contain consecutive hyphens (`--`)
-- Must match the parent directory name
-
-**description** (required)
-- Use the description from step 10, refined in step 11
-
-### Optional fields
-
-**license** (optional)
-- License name or reference to bundled license file
-- Example: `Apache-2.0` or `Proprietary. LICENSE.txt has complete terms`
-
-**compatibility** (optional)
-- Max 500 characters
-- Only include if skill has specific environment requirements
-- Example: `Requires git, docker, jq, and access to the internet`
-
-**metadata** (optional)
-- Arbitrary key-value mapping for additional metadata
-- Recommend unique key names to avoid conflicts
-- Example:
-  ```yaml
-  metadata:
-    author: your-name
-    version: "1.0.0"
-  ```
-
-**allowed-tools** (optional, experimental)
-- Space-delimited list of pre-approved tools
-- Example: `Bash(git:*) Bash(jq:*) Read`
-
----
-
-## 13. Present changes for approval
-
-Before writing any files to disk:
-
-1. Show the complete folder structure that will be created
-2. Display the full content of all files
-3. For modifications: highlight what's changing from the existing skill
-4. Wait for explicit approval before proceeding
-
-Do not write files until the user approves.
-
----
-
-## 14. Write to ~/.kiro/skills/
-
-After receiving approval:
-
-1. Create `~/.kiro/skills/<skill-name>/` directory if needed
-2. Write `SKILL.md` with frontmatter and content
-3. Create `scripts/` only if scripts are included
-4. Create `references/` only if reference files are included
-5. Create `assets/` only if assets are included
-6. Write all generated files
-7. Set executable permissions on scripts (`chmod +x`)
-
----
-
-## 15. Confirm installation
-
-After writing files:
-
-1. Report the skill location
-2. List all created/modified files
-3. Provide 6-10 activation phrases for testing
-
-Example activation phrases:
-
-- gather requirements
-- write a PRD
-- define acceptance criteria
-- clarify feature scope
-- turn an idea into a specification
+Static resources: templates, images, data files, schemas.
 
 ---
 
 # Output Format
 
-When creating a skill, provide:
+When creating or modifying a skill, provide:
 
-1. **Folder structure** - Show only directories that contain files
-2. **Complete file contents** - All files as fenced code blocks with paths
-3. **Activation phrases** - 6-10 phrases that should trigger the skill
-4. **Collision report** (if applicable) - Any overlapping skills detected
-
----
-
-# Example Response Structure
-
-```
-~/.kiro/skills/
-  requirements-gathering/
-    SKILL.md
-    references/
-      prd-template.md
-```
-
-Provide all generated files as fenced code blocks with paths.
-
----
-
-# Collision Report (if applicable)
-
-If the skill overlapped with existing skills, report:
-
-- conflicting skills
-- what was changed to differentiate the new skill
-- final activation phrases
+1. **Folder structure** — directories that contain files
+2. **Complete file contents** — all files as fenced code blocks with paths
+3. **Activation phrases** — 6-10 phrases that should trigger the skill
+4. **Collision report** (if applicable) — overlapping skills and what was changed to differentiate
