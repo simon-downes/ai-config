@@ -54,11 +54,25 @@ Read core documentation and project manifests:
 - `./docs/` (if present)
 
 **Project manifests** (read whichever exist):
-- `pyproject.toml`, `package.json`, `composer.json`, `Cargo.toml`, `go.mod`
-- `Makefile`, `Taskfile.yml`, `justfile`
-- `Dockerfile`, `docker-compose.yml`
-- `.github/workflows/*.yml`
-- `terraform/*.tf` (variable/output declarations)
+
+*Package manifests:*
+`pyproject.toml`, `package.json`, `composer.json`, `Cargo.toml`, `go.mod`,
+`pom.xml`, `build.gradle*`, `*.csproj`, `Gemfile`, `mix.exs`
+
+*Workspace/monorepo manifests:*
+`pnpm-workspace.yaml`, `nx.json`, `turbo.json`, `lerna.json`, `WORKSPACE`, `MODULE.bazel`
+
+*Task/build manifests:*
+`Makefile`, `Taskfile.yml`, `justfile`
+
+*Container/deploy manifests:*
+`Dockerfile*`, `docker-compose*.yml`, Helm charts, k8s manifests, `terraform/*.tf`
+
+*CI manifests:*
+`.github/workflows/*.yml`, `.gitlab-ci.yml`, `Jenkinsfile`
+
+*Toolchain:*
+`.nvmrc`, `.tool-versions`, `.python-version`, lockfiles
 
 **Structure:**
 - Top-level directory tree (2 levels)
@@ -155,6 +169,21 @@ Invoke via `use_subagent` with:
 - Context: repo pattern, partition paths, what to analyze
 
 The subagent has read-only access (read, glob, grep, shell, code) and returns structured analysis for its partition.
+
+## Parent / Subagent Contract
+
+**The parent skill (main agent) is responsible for:**
+- Selecting analysis mode (surface vs deep)
+- Partitioning the repo
+- Passing objective and context to subagents
+- Synthesizing cross-partition relationships
+- Writing normalized artifacts to `./analysis/`
+
+**The codebase-analyzer subagent is responsible for:**
+- Read-only analysis of assigned partition paths
+- Returning structured markdown (never writing files)
+- Staying within token budget and assigned scope
+- Identifying entrypoints, dependencies, tooling, and findings for its partition
 
 ---
 

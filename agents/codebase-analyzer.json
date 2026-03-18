@@ -15,9 +15,6 @@
         "tail( .*)?",
         "cat( .*)?",
         "find( .*)?",
-        "git log( .*)?",
-        "git show( .*)?",
-        "git diff( .*)?",
         "git ls-files( .*)?"
       ],
       "deniedCommands": [
