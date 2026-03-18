@@ -22,6 +22,7 @@
         "pnpm run [a-zA-Z0-9:_-]+( .*)?",
         "yarn [a-zA-Z0-9:_-]+( .*)?",
         "make [a-zA-Z0-9:_-]+( .*)?",
+        "just [a-zA-Z0-9:_-]+( .*)?",
         "uv run .+",
         "(terraform|tofu) (fmt|validate)( .*)?",
         "tflint( .*)?"
