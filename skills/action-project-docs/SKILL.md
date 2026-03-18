@@ -1,7 +1,12 @@
 ---
 name: action-project-docs
 description: >
-  Generate or update README.md, CONTRIBUTING.md, and AGENTS.md files for projects by analyzing codebase structure and applying paradigm-appropriate templates. Use this skill when creating project documentation from scratch, updating existing documentation files, refactoring documentation structure, adding missing documentation files, improving documentation to follow best practices, or when the user requests to "update project docs" or "create a README/CONTRIBUTING/AGENTS file".
+  Generate or update README.md, CONTRIBUTING.md, and AGENTS.md for projects using
+  codebase analysis artifacts. Supports operating on individual files or the full set.
+  Use this skill when creating project documentation from scratch, updating existing
+  documentation after changes, adding missing documentation files, improving documentation
+  quality, or when the user asks to "update the README", "create project docs", or
+  "add a CONTRIBUTING file".
 ---
 
 # Purpose
@@ -9,32 +14,25 @@ description: >
 Generate and maintain high-quality project documentation (README.md, CONTRIBUTING.md, AGENTS.md) that is:
 
 - Accurate to the actual codebase
-- Appropriate for the project paradigm
+- Appropriate for the project type
 - Minimal and focused
-- Free from duplication
+- Free from duplication across files
 - Useful for both humans and AI agents
 
 ---
 
 # When to Use
 
-Use this skill when:
-
 - Creating documentation for a new project
-- Updating existing documentation after significant changes
-- Refactoring documentation structure
+- Updating documentation after significant changes
 - Adding missing documentation files
 - Improving documentation to follow best practices
 
----
-
 # When Not to Use
-
-Do not use this skill for:
 
 - Minor typo fixes or small edits (handle directly)
 - API documentation or code comments (different concern)
-- Detailed architecture docs (should be separate files)
+- Detailed architecture docs (belong in `/docs`)
 - Release notes or changelogs (different format)
 
 ---
@@ -43,299 +41,121 @@ Do not use this skill for:
 
 ## 1. Determine scope
 
-Check which files exist and what the user wants:
+Determine which files to operate on:
 
-- Does README.md exist?
-- Does CONTRIBUTING.md exist?
-- Does AGENTS.md exist?
-- Is this creation, update, or improvement?
+- **Individual file**: user specifies a file ("update the README") → operate on that file only
+- **Full set**: user asks for "project docs" or doesn't specify → operate on README + CONTRIBUTING, add AGENTS.md only if warranted
 
-Default to treating README + CONTRIBUTING as a unified set. Only create AGENTS.md if there are non-obvious agent-specific concerns.
+Check which files already exist. For existing files, the goal is to improve and update — not replace.
 
----
+## 2. Gather codebase understanding
 
-## 2. Analyze the codebase
+Use `action-analyze-codebase` (surface mode) to understand the project. If analysis artifacts
+already exist in `./analysis/`, use those.
 
-Examine the project to understand:
+If the codebase analyzer is not available, read core docs and manifests directly as a fallback.
 
-**Project paradigms** (can be multiple):
-- Web app: HTTP service, API, web interface
-- CLI tool: Command-line interface
-- Single library/module: One cohesive package
-- Collection of libraries/modules: Multiple related packages
-
-**Technical details:**
-- Primary languages
-- Frameworks and key dependencies
-- Build/test tooling
-- Package structure
-- Entry points
+The key information needed:
+- Project type (web app, CLI, library, collection, infrastructure, etc.)
+- Primary languages and frameworks
+- Build/test/lint tooling and commands
+- Entry points and how to run the project
 - Configuration approach
-- Deployment artifacts (if any)
+- Deployment approach (if applicable)
 
-**Existing patterns:**
-- Code organization conventions
-- Testing approach
-- Documentation style
-- Contribution history (if git repo)
+## 3. Read existing documentation
 
-Read existing documentation files if present to understand current state.
+If updating existing files:
 
----
+1. Read the current content in full
+2. Identify what's accurate and should be preserved
+3. Identify what's outdated or missing
+4. Note the existing structure and style
 
-## 3. Identify information gaps
+**Preservation rule:** Do not discard existing information unless it's demonstrably incorrect
+or the user explicitly asks for a rewrite. Existing docs may contain context that isn't
+discoverable from code alone.
 
-Determine what information is:
-- Available from codebase analysis
-- Missing or ambiguous
-- Needs user clarification
+## 4. Identify gaps and ask questions
 
-Prepare questions for the user about missing details.
+Before generating content, identify what's missing or ambiguous.
 
----
+Ask the user about:
+- Information that can't be determined from code (e.g., deployment targets, team conventions)
+- Choices between alternatives (e.g., which installation method to feature)
+- Whether existing content that looks outdated should be kept or removed
 
-## 4. Select template sections
+Ask one question at a time. Provide options when helpful.
 
-Based on identified paradigms, select relevant sections from templates (see `references/templates.md`).
+## 5. Draft content
 
-Projects can match multiple paradigms - compose documentation from all applicable sections.
-
-Common sections by paradigm:
-
-**Web app:**
-- API endpoints or UI access
-- Environment variables
-- Database setup
-- Deployment instructions
-
-**CLI tool:**
-- Installation methods
-- Command examples
-- Configuration options
-- Common workflows
-
-**Single library:**
-- Installation from package manager
-- Import/usage examples
-- API reference link
-- Version compatibility
-
-**Collection:**
-- Repository structure
-- Package purposes
-- Cross-package dependencies
-- Development workflow
-
----
-
-## 5. Draft documentation structure
-
-Create an outline showing:
-- Which sections will appear in each file
-- How information is distributed to avoid duplication
-- What "Key Rules" will be highlighted
-
-Show this structure to the user before generating content.
-
----
-
-## 6. Generate content
-
-For each file:
-
-**README.md:**
-- Key Rules section (imperative, agent-friendly)
-- Project overview
-- Getting started / installation
-- Usage examples
-- Development setup (brief, link to CONTRIBUTING)
-- Links to detailed docs
-
-**CONTRIBUTING.md:**
-- Key Rules section (imperative, agent-friendly)
-- Development environment setup
-- Project-specific conventions and patterns
-- Testing approach
-- PR/contribution process
-- Links to external standards (don't duplicate)
-
-**AGENTS.md (optional):**
-- Non-obvious rules for AI agents
-- Safety constraints
-- Project-specific automation hints
-- Areas requiring human review
+Generate content using the appropriate template as a starting point:
+- [references/readme-template.md](references/readme-template.md)
+- [references/contributing-template.md](references/contributing-template.md)
+- [references/agents-template.md](references/agents-template.md)
 
 **Content principles:**
 - Document what exists, not preferences
 - Extract actual patterns from the codebase
-- Be specific and concrete
+- Be specific and concrete — exact commands, actual paths
 - Avoid generic advice
-- Link to detailed docs rather than duplicating
-- Keep "Key Rules" to 5-10 critical points
+- Link to detailed docs (in `/docs` or external) rather than duplicating
 
----
+**For updates:** merge new content into the existing structure. Match the existing style
+and tone. Add new sections where appropriate rather than reorganising unless asked.
 
-## 7. Deduplicate across files
+**For new files:** use the template structure, adapting sections to the project type.
+The "Key Rules" pattern is recommended for new docs — a short list of 5-10 imperative
+statements covering the most critical points for the file's audience.
 
-Review all generated content and ensure:
+## 6. Deduplicate (full-set mode only)
+
+When operating on multiple files, ensure:
 - Each piece of information appears once
 - Information is in the most appropriate file
-- Files reference each other when needed
+- Files reference each other where needed
 
-**Distribution guidelines:**
-- README: User-facing, getting started
-- CONTRIBUTING: Developer-facing, how to work on the project
-- AGENTS: AI-specific, non-obvious automation concerns
+**Distribution:**
+- README: user-facing — what it is, how to use it, how to get started
+- CONTRIBUTING: developer-facing — how to work on the project, conventions, testing
+- AGENTS: agent-specific — non-obvious rules, safety constraints, automation hints
 
----
-
-## 8. Prompt for missing information
-
-Ask the user targeted questions about:
-- Ambiguous details
-- Missing context
-- Choices between alternatives
-
-Ask one question at a time. Provide options when helpful.
-
----
-
-## 9. Present for approval
+## 7. Present for approval
 
 Show the complete content of all files to be created or updated.
 
-For updates, highlight what's changing from existing files.
+For updates, highlight what changed from the existing content and why.
 
-Wait for explicit approval before writing files.
+Wait for explicit approval before writing.
 
----
-
-## 10. Write files
+## 8. Write files
 
 After approval:
-- Write README.md
-- Write CONTRIBUTING.md
-- Write AGENTS.md (if applicable)
-- Report what was created/updated
+- Write the file(s) to the project root
+- Report what was created or updated
 
 ---
 
-# Output Format
+# AGENTS.md Guidance
 
-Each documentation file should follow this structure:
+Only create AGENTS.md when there are genuinely non-obvious rules for AI agents.
 
-## README.md
+**Good candidates for AGENTS.md:**
+- Safety constraints (e.g., "never modify state files directly")
+- Required human approval points
+- Non-obvious project structure (e.g., "core/ is stable API, experimental/ may change")
+- Automation boundaries (e.g., "integration tests require Docker")
+- Project-specific patterns that aren't obvious from code
 
-```markdown
-# Project Name
-
-Brief description (1-2 sentences)
-
-## Key Rules
-
-- Rule 1
-- Rule 2
-- Rule 3
-
-## [Paradigm-specific sections]
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md)
-```
-
-## CONTRIBUTING.md
-
-```markdown
-# Contributing
-
-## Key Rules
-
-- Rule 1
-- Rule 2
-- Rule 3
-
-## Development Setup
-
-## Project Conventions
-
-## Testing
-
-## Submitting Changes
-```
-
-## AGENTS.md (if needed)
-
-```markdown
-# Agent Guidelines
-
-Brief context about the project.
-
-## Rules
-
-- Non-obvious rule 1
-- Non-obvious rule 2
-
-## Safety Constraints
-
-- Constraint 1
-
-## Hints
-
-- Helpful hint 1
-```
+**Don't create AGENTS.md for:**
+- Information already clear from README/CONTRIBUTING
+- Generic best practices
+- Rules that are obvious from code structure
 
 ---
 
-# Examples
+# Error Handling
 
-## Example 1: New Python CLI tool
-
-**User request:**
-"Create documentation for this project"
-
-**Analysis:**
-- Single Python package with Click CLI
-- Entry point in `__main__.py`
-- Uses pytest for testing
-- No existing docs
-
-**Output:**
-README.md with installation, command examples, development setup
-CONTRIBUTING.md with Python conventions, testing approach, PR process
-No AGENTS.md (no special agent concerns)
-
----
-
-## Example 2: Update docs for web app
-
-**User request:**
-"Update the README, we added authentication"
-
-**Analysis:**
-- Existing README and CONTRIBUTING
-- New auth middleware and environment variables
-- Database migrations added
-
-**Output:**
-Updated README.md with new environment variables and auth setup
-Updated CONTRIBUTING.md with migration workflow
-Preserved existing structure and style
-
----
-
-## Example 3: Terraform module collection
-
-**User request:**
-"Generate project docs"
-
-**Analysis:**
-- Multiple Terraform modules in subdirectories
-- Each module has examples/
-- Shared variables pattern
-- No existing docs
-
-**Output:**
-README.md with module overview, usage examples, module listing
-CONTRIBUTING.md with Terraform conventions, testing with terratest, module structure
-AGENTS.md with rules about state management and variable validation
+- **No codebase analysis available**: fall back to reading manifests and project files directly
+- **Existing docs have non-standard structure**: preserve the structure, add content within it
+- **Conflicting information between docs and code**: flag to the user, don't silently override
