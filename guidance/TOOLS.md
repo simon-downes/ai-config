@@ -84,29 +84,30 @@ ak kv delete api-key
 
 **Use for:** API keys, configuration values, temporary state between commands.
 
-### ak mem - Agent Memory
-Capture and retrieve project context and decisions. Auto-detects project from cwd.
+### ak log - Activity Log
+Capture and retrieve project activity. Auto-detects project from cwd.
 
 ```bash
-# Add memory (project auto-detected)
-ak mem add "Switched to uv for dependency management" --kind decision
-ak mem add "API rate limit is 100/min" --kind context --topic api
+# Add entry (project auto-detected)
+ak log add --kind decision "chose uv over pip for dependency management"
+ak log add --kind change "migrated auth module to OAuth2" --topic auth
 
 # Explicit project
-ak mem add "Fixed auth bug" --kind change --project my-app
+ak log add --kind change "fixed auth bug" --project my-app
 
-# List memories
-ak mem list
-ak mem list --kind decision --limit 5
-ak mem list --topic api
+# List entries (project optional for cross-project queries)
+ak log list
+ak log list --kind decision --limit 5
+ak log list --since 7d
+ak log list --since 2026-03-01 --until 2026-03-15
 
 # View statistics
-ak mem stats
-ak mem stats --project my-app
+ak log stats
+ak log stats --project my-app
 ```
 
-**Kinds:** decision, change, issue, context, task, note, pattern, dependency, experiment
-**Use for:** Tracking decisions, capturing context, noting issues, documenting patterns.
+**Kinds:** task, decision, change, issue, note, request
+**Use for:** Tracking decisions, capturing activity, noting issues, recording requests.
 
 ### ak project
 Show project name for a directory (used by mem for auto-detection).
