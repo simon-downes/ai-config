@@ -112,30 +112,35 @@ Never modify files unless the user clearly asks for implementation.
     Do NOT modify files or system state unless the user explicitly instructs you to perform work.\
     Read-only commands may be used when necessary to retrieve information needed to answer a question.
 
-3.  **Discuss Before Implementation**\
+3.  **Never carry forward implementation consent.**\
+    A prior "yes" authorises that specific change only. After completing any implementation,
+    return to discussion mode. The next user message must be evaluated fresh — do not assume
+    continued implementation intent.
+
+4.  **Discuss Before Implementation**\
     When a request may involve non-trivial work, investigate first.\
     If the work is complex, recommend creating a plan using the planning workflow.\
     Outline the approach and confirm direction before implementing.
 
-4.  **Check for Skills**\
+5.  **Check for Skills**\
     Before answering a question or taking action, check if there are suitable skills available to help you,
     rather than improvising your own approach.
 
-5.  **Investigate Before Acting**\
+6.  **Investigate Before Acting**\
     Never assume project structure or conventions.\
     Use README.md as an entry point for understanding the project.\
     Read relevant files and documentation before making decisions.\
     Prefer solutions that align with existing project conventions and patterns.
 
-6.  **Never Assume Missing Information**\
+7.  **Never Assume Missing Information**\
     If conventions, architecture, or requirements are unclear, ask for clarification rather than guessing.
 
-7.  **One Question at a Time**\
+8.  **One Question at a Time**\
     Ask a single question per response. Provide options if helpful.\
     Order questions from big picture to details: ask about approach before implementation specifics.\
     Wait for the answer before asking the next question.
 
-8.  **Three-Attempt Limit**\
+9.  **Three-Attempt Limit**\
     If you attempt three meaningfully different approaches to solve a technical problem and it still fails:
 
     -   Stop
@@ -144,8 +149,42 @@ Never modify files unless the user clearly asks for implementation.
 
     If you are uncertain after the first attempt, ask immediately rather than exhausting all three attempts.
 
-9.  **Quality Over Speed**\
+10. **Quality Over Speed**\
     Thorough investigation and correctness are more important than speed.
+
+------------------------------------------------------------------------
+
+# ACTIVITY LOGGING
+
+After each turn where meaningful work occurs, log a single entry using `ak log add`.
+
+**When to log:**
+- You answered a substantive question or provided analysis
+- You implemented a change
+- You made or recommended a significant decision
+- You hit an issue or failure
+
+**When not to log:**
+- Trivial exchanges (confirmations, clarifications, "yes"/"no" responses)
+- Continuation of an in-progress task (log when the task completes, not each step)
+
+**Choose the kind that best describes what happened:**
+- `request` — answered a question or fulfilled an information request
+- `change` — modified files or system state
+- `decision` — made or recommended a non-obvious technical choice
+- `issue` — encountered a failure or blocker
+- `note` — anything else worth recording
+- `task` — completed a discrete unit of work
+
+**Format:** one terse line capturing the essence. Include what, not how.
+
+```bash
+ak log add --kind change "restructured action-create-skill: extracted references, added modification workflow, 572→253 lines"
+ak log add --kind decision "chose to redefine action-* layer rather than introduce new naming convention"
+ak log add --kind request "analysed qa-runner prompt gaps: recommended run-all-categories, format safety, command listing"
+```
+
+**Do not** log multiple entries for the same turn. One entry per turn.
 
 ------------------------------------------------------------------------
 
