@@ -6,47 +6,64 @@ Personal AI-assisted coding workflow tooling for Kiro CLI.
 
 This workspace provides the configuration, agents, and skills that power my AI-assisted development workflow. It consists of three repositories that work together:
 
-- **agent-workspace** (this repo) - Agent configurations, skills, and installation tooling
-- **agent-kit** - CLI utilities for development workflows (key-value storage, OAuth, Notion integration)
+- **agent-workspace** (this repo) - Agent configurations, skills, prompts, and installation tooling
+- **agent-kit** - CLI utilities for development workflows (`ak` command — key-value storage, activity logging, OAuth, Notion)
 - **agent-executor** - Unified execution hub for running AI tools in isolated Docker containers
 
 ## Repository Structure
 
-The `agent-kit` and `agent-executor` repositories should be checked out as subdirectories alongside this main repository:
-
 ```
 agent-workspace/
-├── agent-kit/          # git clone https://github.com/simon-downes/agent-kit
-├── agent-executor/     # git clone https://github.com/simon-downes/agent-executor
-├── agents/             # Custom agent configurations
-├── skills/             # Reusable knowledge modules
-└── install.sh          # Installation script
+├── agents/             # Agent configurations (JSON)
+├── skills/             # Layered knowledge modules (SKILL.md + references)
+├── prompts/            # System prompts for agents
+├── guidance/           # Steering files (installed to ~/.kiro/steering/)
+├── agent-kit/          # git subdir — CLI toolkit
+├── agent-executor/     # git subdir — sandboxed execution
+└── install.sh          # Deploy to ~/.kiro/
 ```
 
-Both subdirectories are git-ignored to keep the repositories logically separate.
+`agent-kit` and `agent-executor` are separate git repositories checked out as subdirectories (git-ignored).
 
-## Components
+## Agents
 
-### Agents
+Two orchestrator agents with different permission levels, plus five read-only subagents:
 
-Custom agent configurations with specialized tool access and workflows:
-- `principal-engineer` - Sandbox-only agent with unrestricted capabilities
-- `principal-engineer-safe` - Production-safe variant with restricted access
-- `platform-engineering` - Platform-focused agent for AWS/infrastructure work
+**Orchestrators:**
+- `principal-engineer-safe` — restricted writes, requires approval for destructive commands
+- `principal-engineer-sandbox` — unrestricted, for use in sandboxed environments
 
-### Skills
+**Subagents** (read-only, spawned by orchestrators):
+- `general-purpose` — research, investigation, ad-hoc tasks
+- `code-reviewer` — code quality review
+- `plan-reviewer` — plan completeness review
+- `qa-runner` — formatting, linting, tests
+- `codebase-analyzer` — deep codebase analysis
 
-Progressive-loading knowledge modules that activate based on context:
-- Language-specific expertise (Terraform, Python)
-- General coding principles and practices
-- Tool-specific workflows (Git/GitHub)
-- Planning, implementation, and review workflows
+Orchestrators own all file mutations. Subagents gather information and return findings.
 
-### Installation
+## Skills
 
-Run `./install.sh` to deploy agents and skills to `~/.kiro/`.
+Skills are layered knowledge modules that activate based on context and user intent.
+
+| Layer | Skills | Purpose |
+|-------|--------|---------|
+| **Policy** | `policy-general-coding`, `policy-lang-python`, `policy-lang-terraform` | Standards and conventions |
+| **Workflow** | `workflow-plan`, `workflow-implement`, `workflow-review` | Core orchestration (plan → implement → review) |
+| **Tool** | `tool-git-github` | Operational guidance for CLI tools |
+| **Action** | `action-create-skill`, `action-project-docs`, `action-analyze-codebase`, `action-review-plan`, `action-create-terraform-module` | Self-contained tasks |
+
+See `skills/action-create-skill/references/LAYERS.md` for layer definitions.
+
+## Installation
+
+```bash
+./install.sh
+```
+
+Copies agents, skills, prompts, and guidance to `~/.kiro/`. The workspace files are the source of truth; `~/.kiro/` is the install target.
 
 ## Related Projects
 
-- [agent-kit](./agent-kit/README.md) - CLI toolkit for development workflows
-- [agent-executor](./agent-executor/README.md) - Sandboxed execution environment for AI tools
+- [agent-kit](./agent-kit/README.md) — CLI toolkit for development workflows
+- [agent-executor](./agent-executor/README.md) — Sandboxed execution environment for AI tools
