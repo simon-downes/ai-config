@@ -33,9 +33,15 @@ Read the plan file:
 ~/plans/<project>/<date>-<description>-PLAN.md
 ```
 
+If no path specified, list `~/plans/<project>/` to show available plans and ask which one.
+
 Verify it contains: Objective, Requirements, Technical Design, and Milestones.
 
 If incomplete or unclear → ask for clarification before proceeding.
+
+**Resuming:** If milestones are partially complete, check `ak log list` and `git log`
+to identify the last completed milestone. Confirm with the user, then continue from
+the next one.
 
 ## 2. Execute Each Milestone
 
@@ -64,13 +70,15 @@ through them.
 
 Two checks:
 
-1. **Review** — invoke `workflow-review` in milestone mode. This runs mechanical checks
-   (qa-runner) and reasoning-level quality review (code-reviewer subagent). Fix any
-   findings marked ❌ before proceeding.
+1. **Review** — invoke `workflow-review` in milestone mode, which triages whether a
+   full review is needed based on the milestone's scope and risk. This runs mechanical
+   checks (qa-runner) and reasoning-level quality review (code-reviewer subagent).
+   Fix any findings marked ❌ before proceeding.
 2. **Milestone-specific** — use the milestone's Verify section to confirm the deliverable
    (a specific command, test, or observable behaviour).
 
-If either check fails → attempt to fix, following the three-attempt limit.
+If either check fails → attempt to fix. If three meaningfully different attempts fail,
+stop, summarise what was tried, and ask the user for guidance.
 
 ### D. Commit and Log
 

@@ -187,7 +187,8 @@ def create_user(
 
 ## Classes
 
-**MUST define `__str__` and `__repr__` methods for custom classes**
+**MUST define `__str__` and `__repr__` methods for custom classes that don't auto-generate them**
+(not needed for dataclasses, Pydantic models, or NamedTuples)
 
 ```python
 class User:

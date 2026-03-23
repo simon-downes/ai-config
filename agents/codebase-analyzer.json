@@ -9,13 +9,17 @@
       "autoAllowReadonly": true,
       "denyByDefault": true,
       "allowedCommands": [
+        "ak( .*)?",
         "tree( .*)?",
         "wc( .*)?",
         "head( .*)?",
         "tail( .*)?",
         "cat( .*)?",
         "find( .*)?",
-        "git ls-files( .*)?"
+        "git ls-files( .*)?",
+        "git log( .*)?",
+        "git diff( .*)?",
+        "git show( .*)?"
       ],
       "deniedCommands": [
         ".*\\brm\\b.*",

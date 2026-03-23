@@ -97,14 +97,6 @@ Create module following:
 - **Service best practices** — apply AWS/provider-specific recommendations
 - **Coding standards** — follow policy-lang-terraform for file organization, naming, structure
 
-**Typical module files:**
-- `README.md` — usage documentation with examples
-- `providers.tf` — provider requirements
-- `variables.tf` — all input variables
-- `outputs.tf` — all outputs
-- `main.tf` or resource-specific files — resource definitions
-- `locals.tf` — local values (if needed)
-
 ## 6. Review and Iterate
 
 Present summary of what was created:

@@ -52,7 +52,7 @@ Provides operational guidance for using a specific CLI tool or system.
 
 **Scope:** One tool or closely related tool family (e.g., git-github, not "all version control")
 
-**Examples:** `tool-git-github`, `tool-aws`, `tool-terraform`
+**Examples:** `tool-git-github`, `tool-aws`
 
 ---
 
@@ -70,7 +70,7 @@ A task that produces a defined outcome.
 
 **Scope:** One cohesive task (e.g., "create skill" not "manage all skills")
 
-**Examples:** `action-create-skill`, `action-project-docs`, `action-qa-check`
+**Examples:** `action-create-skill`, `action-project-docs`, `action-create-terraform-module`
 
 ---
 

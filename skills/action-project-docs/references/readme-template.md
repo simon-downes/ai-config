@@ -70,6 +70,14 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
 - **Getting Started**: which package to use when, installation options
 - **Development**: workspace setup, cross-package workflow
 
+### Umbrella Repo (independent sub-projects)
+
+- **Overview**: what the umbrella groups together and why
+- **Repository Structure**: sub-projects with one-line descriptions, note they are independent repos
+- **Getting Started**: shared setup (if any), then point to each sub-project's own README
+- **Related Projects**: links to sub-project READMEs with brief descriptions
+- Do NOT document sub-project internals — each sub-project owns its own docs
+
 ### Infrastructure (Terraform/CloudFormation)
 
 - **Usage**: module invocation example with key variables

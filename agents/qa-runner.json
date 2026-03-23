@@ -18,6 +18,7 @@
       "autoAllowReadonly": true,
       "denyByDefault": true,
       "allowedCommands": [
+        "ak( .*)?",
         "npm run [a-zA-Z0-9:_-]+( .*)?",
         "pnpm run [a-zA-Z0-9:_-]+( .*)?",
         "yarn [a-zA-Z0-9:_-]+( .*)?",

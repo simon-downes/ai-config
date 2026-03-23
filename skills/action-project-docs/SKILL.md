@@ -41,7 +41,18 @@ Generate and maintain high-quality project documentation (README.md, CONTRIBUTIN
 
 ## 1. Determine scope
 
-Determine which files to operate on:
+### Detect project structure
+
+Check for `.git/` directories in immediate children of the project root. If any exist, this is
+an **umbrella repo** — a top-level project that groups independent sub-projects together.
+
+- **Umbrella repo docs**: describe the collection, relationships between sub-projects, and
+  shared setup. Do not document sub-project internals — each sub-project owns its own docs.
+- **Sub-project docs**: when the user specifies a sub-project ("update agent-kit's README"),
+  scope analysis and documentation to that sub-directory. Treat it as an independent project.
+- **Standard repo**: no nested git repos — treat as a single project.
+
+### Determine which files to operate on
 
 - **Individual file**: user specifies a file ("update the README") → operate on that file only
 - **Full set**: user asks for "project docs" or doesn't specify → operate on README + CONTRIBUTING, add AGENTS.md only if warranted
@@ -52,6 +63,9 @@ Check which files already exist. For existing files, the goal is to improve and 
 
 Use `action-analyze-codebase` (surface mode) to understand the project. If analysis artifacts
 already exist in `./analysis/`, use those.
+
+For umbrella repos: analyse the top-level project only (shared config, relationships, install/setup).
+For sub-projects: scope the analysis to the sub-project directory.
 
 If the codebase analyzer is not available, read core docs and manifests directly as a fallback.
 

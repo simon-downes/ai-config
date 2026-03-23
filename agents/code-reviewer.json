@@ -13,6 +13,7 @@
       "autoAllowReadonly": true,
       "denyByDefault": true,
       "allowedCommands": [
+        "ak( .*)?",
         "tree( .*)?",
         "wc( .*)?",
         "head( .*)?",

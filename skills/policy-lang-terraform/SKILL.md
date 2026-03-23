@@ -180,10 +180,17 @@ Log groups follow AWS conventions: `/aws/lambda/${local.application}-${local.env
 
 ## Resource Tagging
 
-**All resources MUST be tagged** according to the company tagging policy defined in steering files.
+**All resources MUST be tagged** according to the tagging policy defined in steering files.
+
+**Always include:**
+- `terraform` — repo and path to the Terraform source (e.g., `platform-core/my-service`).
+  No org prefix.
+
+**Additional required tags** (e.g., service/application, owner/team, environment/env) are
+defined in steering files. If no steering file is loaded, ask the user about required tags.
 
 **Tagging implementation:**
-- Tag names MUST use lower-kebab-case (e.g., `environment-tier`, `cost-center`)
+- Tag names MUST use lower-kebab-case (e.g., `environment`, `cost-center`)
 - Tag values SHOULD be lower-case
 - Define tags in `locals` and apply via provider `default_tags` for AWS resources
 - Explicitly tag non-AWS provider resources
@@ -192,9 +199,8 @@ Log groups follow AWS conventions: `/aws/lambda/${local.application}-${local.env
 ```hcl
 locals {
   common_tags = {
-    # Consult steering files for required tags
-    environment = var.environment
-    managed-by  = "terraform"
+    terraform = "platform-core/my-service"
+    # Additional tags from steering file or user
   }
 }
 
@@ -210,8 +216,6 @@ resource "datadog_monitor" "api_errors" {
   tags = values(local.common_tags)
 }
 ```
-
-**Note:** Missing required tags may cause access control issues.
 
 ## IAM Policies
 
