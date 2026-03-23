@@ -74,6 +74,7 @@ JIRA: PLAT-123, PLAT-124
 - `refactor:` - Code refactoring
 - `test:` - Adding/updating tests
 - `chore:` - Maintenance tasks
+- `major:` - Breaking changes
 
 **Examples:**
 ```
@@ -110,6 +111,9 @@ git pull
 # Rebase feature branch
 git checkout feature-branch
 git rebase main
+
+# Push rebased branch (required after rebase)
+git push --force-with-lease
 
 # Restore stashed work if needed
 git stash pop

@@ -1,8 +1,8 @@
 {
   "name": "principal-engineer-safe",
   "description": "Principal engineer agent with restricted file access for use outside sandbox",
-  "prompt": "file://./principal-engineer.prompt.md",
-  "model": "claude-sonnet-4.5",
+  "prompt": "file://../prompts/principal-engineer.prompt.md",
+  "model": "claude-opus-4.6",
   "mcpServers": {
     "aws-knowledge": {
       "command": "uvx",
@@ -82,6 +82,7 @@
     "shell": {
       "autoAllowReadonly": true,
       "allowedCommands": [
+        "ak( .*)?",
         "uv .*",
         "npm run.*",
         "php .*",
@@ -115,11 +116,20 @@
       "autoAllowReadonly": true
     },
     "use_subagent": {
-      "trustedAgents": []
+      "trustedAgents": [
+        "general-purpose",
+        "code-reviewer",
+        "plan-reviewer",
+        "qa-runner",
+        "codebase-analyzer"
+      ]
     }
   },
   "resources": [
     "file://README.md",
+    "file://CONTRIBUTING.md",
+    "file://AGENTS.md",
+    "skill://~/.kiro/steering/TOOLS.md",
     "skill://~/.kiro/skills/**/SKILL.md"
   ],
   "includeMcpJson": false,

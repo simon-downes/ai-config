@@ -51,15 +51,6 @@ RUN ARCH=$(uname -m) && \
 
 RUN ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then \
-        ACLI_ARCH="amd64"; \
-    elif [ "$ARCH" = "aarch64" ]; then \
-        ACLI_ARCH="arm64"; \
-    fi && \
-    curl -fsSL "https://acli.atlassian.com/linux/latest/acli_linux_${ACLI_ARCH}/acli" -o /usr/local/bin/acli && \
-    chmod +x /usr/local/bin/acli
-
-RUN ARCH=$(uname -m) && \
-    if [ "$ARCH" = "x86_64" ]; then \
         SCALR_ARCH="amd64"; \
     elif [ "$ARCH" = "aarch64" ]; then \
         SCALR_ARCH="arm64"; \

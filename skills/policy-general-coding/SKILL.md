@@ -1,5 +1,5 @@
 ---
-name: general-coding-expertise
+name: policy-general-coding
 description: Core principles and practices for writing maintainable, high-quality code across all languages. Use when writing code, reviewing implementations, or making architectural decisions.
 ---
 

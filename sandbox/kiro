@@ -168,6 +168,7 @@ run_container() {
         -v "$HOME/.kiro:/root/.kiro" \
         -v "$HOME/Library/Application Support/kiro-cli:/root/.local/share/kiro-cli" \
         -v "$HOME/.cli-tools:/root/.cli-tools" \
+        -v "$HOME/plans:/root/plans" \
         -v "$work_dir:$work_dir" \
         -e "SESSION_NAME=$session_name" \
         -e "SHELL_MODE=$shell_mode" \

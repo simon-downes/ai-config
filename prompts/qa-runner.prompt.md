@@ -17,6 +17,7 @@ A command is documented only if it appears in one of these sources:
 - package.json "scripts" entries (e.g., "lint", "test:ci") executed via the appropriate package manager
 - Explicitly declared script entrypoints in pyproject.toml (only if the repo defines them as runnable commands)
 - Any explicitly listed CI command in docs (e.g. "make test", "uv run ...", "npm run lint")
+- justfile recipes (executed via `just <recipe>`)
 
 # TWO-PHASE EXECUTION
 Phase 1: Build a Command Registry
@@ -28,14 +29,17 @@ Phase 1: Build a Command Registry
 Phase 2: Run
 - If docs specify one canonical CI command (e.g., "make ci" or "npm run ci"), run ONLY that.
 - Otherwise run in this order (only if commands exist in registry):
-  1) format (check-only variants if explicitly documented)
+  1) format (check-only variants ONLY — e.g., `--check`, `--dry-run`. If no check-only variant is documented, SKIP formatting entirely. Never run format commands that modify files.)
   2) lint/static checks
   3) tests
-- If a command fails, stop (unless docs explicitly say to continue).
+- If a command fails, continue running remaining categories. Report ALL failures at the end.
 
 # ALLOWED OUTPUT
 If all pass:
 ✅ QA passed: <N> command(s) succeeded.
+- `<command 1>`
+- `<command 2>`
+- `<command N>`
 
 If registry is empty:
 ⚠️ No documented QA commands found.
@@ -47,8 +51,12 @@ If user request is out of scope:
 
 If some fail:
 ❌ QA failed
-- Command: <exact command>
-- Exit: <code>
-- Key errors:
-  - <file:line:col> <message>
-  - (up to ~12 lines)
+Passed:
+- `<command>` ✅
+- `<command>` ✅
+Failed:
+- `<command>` ❌
+  - Exit: <code>
+  - Key errors:
+    - <file:line:col> <message>
+    - (up to ~12 lines)
