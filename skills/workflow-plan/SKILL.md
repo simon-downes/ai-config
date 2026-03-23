@@ -2,10 +2,10 @@
 name: workflow-plan
 description: >
   Guide complete planning workflow from vague intent to executable implementation plan
-  through structured requirements gathering, technical design, and milestone breakdown.
-  Use when starting projects that need comprehensive planning before implementation,
-  creating detailed plans for complex features, or turning high-level ideas into
-  actionable work with clear deliverables.
+  through structured requirements gathering, technical design, milestone breakdown, and
+  automated plan review. Use when starting projects that need comprehensive planning
+  before implementation, creating detailed plans for complex features, or turning
+  high-level ideas into actionable work with clear deliverables.
 ---
 
 # Purpose
@@ -37,7 +37,7 @@ Plans are stored as:
 
 ---
 
-# Three-Phase Planning Process
+# Four-Phase Planning Process
 
 ## Phase 1: Objective + Requirements
 
@@ -132,11 +132,30 @@ Each milestone has four sections:
 - Are Tasks specific enough to track progress but not so detailed they prescribe code?
 - Does Verify give a concrete way to confirm the deliverable?
 
-**Present Complete Plan** — show all three phases together.
-
-**Approval Gate:** "Here is the complete plan. Shall we move to Implementation Mode?"
+**After completing milestones, automatically proceed to Phase 4.**
 
 See [references/MILESTONES.md](references/MILESTONES.md) for detailed rules and examples.
+
+---
+
+## Phase 4: Review
+
+**Goal:** Verify the plan is complete and implementable before presenting to the user.
+
+1. **Run review** — invoke `action-review-plan` with the draft plan. The reviewer audits
+   against quality criteria in a clean context window.
+
+2. **Resolve findings** — for each finding:
+   - Check the codebase first (can you answer it from code?)
+   - If not, ask the user (one question at a time)
+   - Update the plan to address the finding
+
+3. **Re-review if needed** — if findings were resolved, run the review again. Maximum 2
+   review passes. If findings persist after 2 passes, note them when presenting the plan.
+
+4. **Present complete plan** — show all four phases together.
+
+**Approval Gate:** "Here is the complete plan. Shall we move to Implementation Mode?"
 
 ---
 
