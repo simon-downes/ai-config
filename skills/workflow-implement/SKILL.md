@@ -64,8 +64,9 @@ through them.
 
 Two checks:
 
-1. **Code quality** — spawn the `qa-runner` subagent to run formatting, linting, and tests.
-   Fix any failures before proceeding.
+1. **Review** — invoke `workflow-review` in milestone mode. This runs mechanical checks
+   (qa-runner) and reasoning-level quality review (code-reviewer subagent). Fix any
+   findings marked ❌ before proceeding.
 2. **Milestone-specific** — use the milestone's Verify section to confirm the deliverable
    (a specific command, test, or observable behaviour).
 

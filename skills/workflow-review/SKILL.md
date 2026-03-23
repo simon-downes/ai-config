@@ -1,203 +1,269 @@
 ---
 name: workflow-review
 description: >
-  Systematically evaluate completed work to ensure it meets requirements and maintains quality standards. Use when reviewing code changes, assessing implementations, verifying requirements are met, checking code quality, evaluating system designs, or conducting quality assessments before deployment.
+  Review code changes for quality, standards compliance, and plan alignment. Supports
+  milestone reviews during implementation, full implementation reviews, and standalone
+  PR/ad-hoc reviews. Orchestrates qa-runner for mechanical checks and a code-reviewer
+  subagent for reasoning-level quality assessment. Use when reviewing code changes,
+  verifying implementations against plans, checking code quality before committing or
+  merging, reviewing pull requests, or when asked to "review this", "check the code",
+  or "is this ready to merge".
 ---
 
 # Purpose
 
-Systematically evaluate completed work to ensure it meets requirements and maintains quality standards.
+Evaluate code changes for quality and correctness. Orchestrates mechanical checks (qa-runner)
+and reasoning-level review (code-reviewer subagent) into a single workflow.
 
-# When to use
+---
 
-- Reviewing code changes or pull requests
-- Assessing completed implementations
-- Verifying requirements are satisfied
-- Checking code quality before deployment
-- Evaluating system designs or architectures
-- Conducting quality assessments
+# When to Use
 
-# When not to use
+- Verifying milestone work during implementation (consumed by workflow-implement)
+- Reviewing a complete implementation against its plan
+- Reviewing a pull request or ad-hoc code changes
+- Checking code quality before merging
 
-- Gathering requirements (use general-requirements-gathering)
-- Creating technical designs (use skill-technical-design)
-- Learning coding standards (those are in lang-* skills)
+# When Not to Use
+
+- Reviewing plans before implementation (use action-review-plan)
+- Creating or modifying plans (use workflow-plan)
+- Running only mechanical checks without reasoning review (use qa-runner directly)
+
+---
+
+# Review Modes
+
+## Milestone Review
+
+**Trigger:** consumed by workflow-implement during the verify step, before commit.
+
+**Scope:** files changed in the current milestone.
+
+**Checks:**
+- Mechanical quality (qa-runner)
+- Reasoning quality (code-reviewer subagent)
+- Milestone deliverable alignment (does the work match the plan's Deliverable?)
+
+**Plan alignment:** light — current milestone's Approach, Tasks, and Deliverable only.
+
+**When to run vs skip:**
+- Always review: security-sensitive work, foundational milestones (first 1-2), milestones
+  establishing new patterns, large milestones (> ~15 files changed)
+- Consider skipping: pure boilerplate/CRUD, late milestones wiring already-reviewed
+  components, small isolated changes (< ~5 files)
+- When in doubt, review — catching a bad pattern early is cheaper than fixing it late
+
+## Implementation Review
+
+**Trigger:** user requests review after all milestones complete.
+
+**Scope:** all files changed during implementation.
+
+**Checks:**
+- Mechanical quality (qa-runner)
+- Reasoning quality (code-reviewer subagent — may partition for large changes)
+- Full plan alignment (requirements tracing, design adherence)
+
+**Plan alignment:** full — trace every MUST requirement to implemented code, verify
+design decisions were followed.
+
+**Scope resolution:**
+1. Feature branch → `git diff $(git merge-base main HEAD)`
+2. Plan exists → find milestone commits from git log, diff the range
+3. User specifies scope → use that
+4. None of the above → ask
+
+## Standalone Review
+
+**Trigger:** user asks to review a PR, diff, or set of files. No plan exists.
+
+**Scope:** the diff or specified files.
+
+**Checks:**
+- Mechanical quality (qa-runner)
+- Reasoning quality (code-reviewer subagent)
+
+**No plan alignment.** The review covers code quality only. Output includes a clear
+disclaimer: "This review covers code quality and standards. Functional completeness
+cannot be verified without a plan or specification."
+
+**Intent inference:** attempt to determine what the changes are meant to achieve from
+PR description, commit messages, or the diff itself. Present the inferred intent for
+the user to validate. If intent cannot be inferred, proceed with quality-only review.
+
+---
 
 # Workflow
 
-1. **Identify what to review**
-   - Clarify the scope (specific files, changes, system, etc.)
-   - Understand the original requirements or objectives
+## 1. Determine mode and scope
 
-2. **Requirements Verification**
-   - Check deliverables against requirements
-   - Verify acceptance criteria are met
-   - Identify gaps or deviations
+Based on how the skill was invoked:
+- Called by workflow-implement → milestone review mode
+- Plan exists and all milestones complete → implementation review mode
+- No plan or user specifies files/PR → standalone review mode
 
-3. **Quality Assessment**
-   - Evaluate against quality dimensions
-   - Document findings for each dimension
-   - Provide specific recommendations
+**Scope resolution by mode:**
 
-4. **Summarize findings**
-   - Present overall assessment
-   - Prioritize issues by severity
-   - Suggest next steps
+**Milestone review:**
+- Changed files are the unstaged/staged changes in the working tree (pre-commit)
 
-# Requirements Verification
+**Implementation review:**
+1. Feature branch → `git diff $(git merge-base main HEAD)`
+2. Plan exists → find milestone commits from `git log`, diff the range
+3. User specifies scope → use that
+4. None of the above → ask
 
-## What to Check
+**Standalone / PR review:**
+- User specifies files → use those
+- PR number provided → use `gh` to retrieve PR context (see tool-git-github skill
+  for PR commands):
+  - `gh pr view <number>` — PR description, metadata, and author intent
+  - `gh pr diff <number>` — the changeset
+  - `gh pr view <number> --json commits` — commit messages for intent inference
+- No PR or files specified → ask
 
-- **Deliverable Completeness**: Does each deliverable exist and function as described?
-- **Acceptance Criteria**: Are all acceptance criteria satisfied?
-- **Requirement Coverage**: Were all MUST requirements implemented? All SHOULD requirements addressed or deferred?
-- **Gaps**: Are there missing features or behaviors specified in requirements?
-- **Deviations**: Were any requirements modified during implementation?
+For all modes, get the full current content of changed files (not just diff hunks)
+for the code-reviewer subagent.
 
-## Output Format
+## 2. Run mechanical checks
 
-For each requirement:
-- ✅ Met - Acceptance criteria satisfied
-- ⚠️ Partially met - Some criteria not satisfied, note what's missing
-- ❌ Not met - Requirement not implemented, note why
-- 🔄 Modified - Requirement changed during implementation
+Spawn `qa-runner` subagent to run formatting, linting, and tests.
 
-# Quality Assessment
+If mechanical checks fail → report failures. These must be fixed before proceeding
+to reasoning review (no point reviewing code that doesn't pass basic checks).
 
-## Coding Standards
+## 3. Run reasoning review
 
-**Check:**
-- Does code follow coding rules and guidelines in context?
-- Are naming conventions consistent?
-- Is code structure appropriate (SOLID, DRY, KISS)?
-- Is formatting consistent?
+Spawn `code-reviewer` subagent with:
+- Full content of changed files
+- Context files: entry points, config, shared types touched by the changes
+- Relevant review dimensions (see below)
+- The plan's milestone spec (milestone review) or full plan (implementation review)
 
-**Look for:**
-- Violations of language-specific standards
-- Inconsistent patterns compared to existing codebase
-- Overly complex or unclear code
+**Partitioning (large reviews only):**
+- Under ~50 changed files → single code-reviewer subagent
+- Over ~50 changed files → partition by module/component, one subagent per partition
+  (up to 4 parallel), orchestrator synthesises findings
 
-## Documentation
+## 4. Run plan alignment (plan-based modes only)
 
-**Check:**
-- Are functions and classes documented with docstrings?
-- Are complex logic sections explained with comments?
-- Is README updated if user-facing changes were made?
-- Are configuration changes documented?
-- Is API documentation updated if endpoints changed?
+The orchestrator handles this directly (not delegated) because it needs the full plan
+and cross-cutting view.
 
-**Look for:**
-- Missing docstrings on public interfaces
-- Outdated comments that don't match code
-- Undocumented breaking changes
-- Missing setup or deployment instructions
+**Milestone review:**
+- Does the work satisfy the milestone's Deliverable statement?
+- Were Approach constraints followed?
+- Were all Tasks addressed?
 
-## Security
+**Implementation review:**
+- Trace each MUST requirement to implementing code — flag any not covered
+- Trace each SHOULD requirement — flag if not covered and not explicitly deferred
+- Verify design decisions were followed (technology choices, code structure, patterns)
+- Check for scope creep — changes that don't trace to any requirement
 
-**Check:**
-- Are all external inputs validated?
-- Are secrets and credentials properly managed (not hardcoded)?
-- Are authentication and authorization implemented correctly?
-- Are error messages appropriate (not leaking sensitive info)?
-- Are dependencies up to date and free of known vulnerabilities?
+## 5. Synthesise and present
 
-**Look for:**
-- SQL injection, XSS, or other injection vulnerabilities
-- Hardcoded passwords, API keys, or tokens
-- Overly permissive access controls
-- Sensitive data in logs
-- Insecure defaults
+Merge findings from qa-runner, code-reviewer, and plan alignment into a single report.
 
-## Test Coverage
+---
 
-**Check:**
-- Are important business logic paths tested?
-- Are edge cases and error conditions tested?
-- Do tests actually verify behavior (not just exercise code)?
-- Are tests maintainable and clear?
+# Review Dimensions
 
-**Look for:**
-- Critical paths without tests
-- Tests that don't assert meaningful outcomes
-- Brittle tests that will break with minor changes
-- Missing negative test cases
+The code-reviewer subagent checks these dimensions. The orchestrator selects which are
+relevant based on what changed.
 
-## Error Handling
+**Always check:**
+- **Coding standards** — conventions, naming, structure, consistency with existing codebase
+- **Error handling** — specific exceptions, appropriate messages, resource cleanup
+- **Documentation** — docstrings on public interfaces, comments on non-obvious logic
 
-**Check:**
-- Are expected errors handled gracefully?
-- Are unexpected errors caught and logged appropriately?
-- Do error messages help users/operators understand what happened?
-- Are resources cleaned up properly in error paths?
+**Check when relevant:**
+- **Security** — input validation, secrets handling, auth, error message leakage.
+  Always relevant when changes touch: auth, user input, API endpoints, data access,
+  configuration, or external integrations.
+- **Performance** — algorithmic efficiency, unnecessary work, N+1 patterns.
+  Relevant when changes touch: data processing, database queries, loops over collections,
+  hot paths.
+- **Technical debt** — shortcuts taken, TODOs introduced, patterns that will cause
+  maintenance burden. Flag but don't block.
 
-**Look for:**
-- Bare except/catch blocks that hide errors
-- Errors that crash the application unnecessarily
-- Missing error handling in critical paths
-- Resource leaks (unclosed files, connections, etc.)
+**Test code** is reviewed differently from production code:
+- Are new code paths covered by tests?
+- Do tests assert meaningful outcomes (not just exercise code)?
+- Are test names descriptive of the behaviour being verified?
+- Are mocks/fixtures realistic and not masking real behaviour?
 
-## Performance
+**Trace outward:** when reviewing changed functions or interfaces, check callers and
+consumers beyond the diff. A changed function signature with unchecked callers is a
+finding. A modified shared type with unconsidered consumers is a finding.
 
-**Check:**
-- Are there obvious inefficiencies (N+1 queries, unnecessary loops)?
-- Are expensive operations cached when appropriate?
-- Are database queries optimized?
-- Are large datasets handled efficiently?
+See [references/REVIEW-DIMENSIONS.md](references/REVIEW-DIMENSIONS.md) for detailed
+criteria the code-reviewer subagent uses.
 
-**Look for:**
-- Algorithms with poor time complexity
-- Missing indexes on frequently queried fields
-- Unnecessary data loading or processing
-- Blocking operations that could be async
+---
 
-## Technical Debt
-
-**Check:**
-- What shortcuts were taken? Are they documented?
-- What refactoring would improve the code?
-- Are there TODOs or FIXMEs? Are they tracked?
-- Is the debt acceptable given project constraints?
-
-**Look for:**
-- Duplicated code that should be abstracted
-- Temporary workarounds that became permanent
-- Overly complex solutions to simple problems
-- Missing abstractions that would improve maintainability
-
-# Assessment Output Format
-
-For each quality dimension, provide:
-
-**Status**: ✅ Good | ⚠️ Concerns | ❌ Issues
-
-**Findings**: Brief description of what was found
-
-**Recommendations**: Specific actions to address concerns or issues (if any)
-
-## Example
-
-**Security**: ⚠️ Concerns
-- **Findings**: API keys stored in environment variables (good), but error messages include full request details which may leak sensitive data
-- **Recommendations**: Sanitize error responses to exclude sensitive headers and parameters
-
-**Test Coverage**: ✅ Good
-- **Findings**: All critical paths tested, edge cases covered, tests are clear and maintainable
-
-# Summary Format
+# Output Format
 
 ```
-# Review Summary
+# Review: <description>
 
-## Requirements Verification
-[Status for each requirement]
+Mode: <milestone | implementation | standalone>
+Scope: <what was reviewed>
+Plan: <plan file, or "none">
 
-## Quality Assessment
-[Status for each dimension with findings]
+## Mechanical Checks
+<qa-runner results: pass/fail with details>
 
-## Overall Assessment
-[Brief summary of readiness]
+## Code Quality
+<code-reviewer findings, grouped by dimension>
 
-## Recommended Actions
-1. [Priority issues to address]
-2. [Secondary improvements]
+## Plan Alignment (if applicable)
+<requirements coverage, design adherence, scope check>
+
+## Questions
+<ambiguous decisions or unclear intent worth discussing>
+
+## Verdict: APPROVE | APPROVE WITH SUGGESTIONS | REQUEST CHANGES
+
+<brief rationale for the verdict>
 ```
+
+**Finding severity:**
+- ❌ **Issue** — must fix before merging/continuing
+- ⚠️ **Concern** — should fix, but not blocking
+- ℹ️ **Suggestion** — improvement opportunity
+- ❓ **Question** — needs clarification from the author
+
+---
+
+# Subagent Contract
+
+## qa-runner (existing)
+
+Runs formatting, linting, and tests. Returns pass/fail with details.
+
+## code-reviewer (new)
+
+**Agent:** `code-reviewer`
+
+**Resources (always loaded):** project `CONTRIBUTING.md` and `README.md` — provides
+project conventions and setup context.
+
+**Input from orchestrator:**
+- Full content of changed files (not diff hunks)
+- Context files (entry points, config, shared types as needed)
+- Selected review dimensions
+- Coding standards: `policy-general-coding` content plus language-specific policy
+  (e.g., `policy-lang-python`) — the orchestrator determines which languages are in
+  the diff and includes all relevant policy content
+- Plan context (milestone spec or design section, if applicable)
+
+**Output:** structured findings per dimension with severity, file references, and
+specific quotes of problematic code.
+
+**Access:** read-only (read, glob, grep, shell, code). Must be able to trace outward
+from changed files to check callers and consumers.
+
+**Constraint:** surfaces findings and questions. Does not suggest rewrites or
+alternative implementations.
