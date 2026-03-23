@@ -2,12 +2,56 @@
 
 ## Purpose
 
-Break work into incremental, testable deliverables that can be implemented and verified independently.
+Break work into incremental, testable deliverables with enough technical context that an
+implementor in a fresh session can execute without re-discovering decisions.
+
+## Milestone Structure
+
+Each milestone has four sections:
+
+**Approach** — technical context that shapes how the work is done:
+- Which libraries, tools, or patterns to use
+- Where in the codebase this work fits (modules, files, existing patterns to follow)
+- Constraints from the existing system
+- ⚠️ Gotchas that could cause problems if missed
+
+Approach answers: "given these tasks, here's what you need to know to do them right."
+
+**Tasks** — concrete units of work to complete:
+- Specific enough to track progress against
+- In roughly the order they should happen
+- Each task should be completable on its own
+- Should not duplicate what's in Approach
+
+Tasks answer: "here's what actually needs to get built."
+
+**Deliverable** — single testable outcome:
+- What's true when this milestone is complete
+- Must be observable and verifiable
+- Exactly one per milestone
+
+**Verify** — how to confirm the deliverable:
+- A command to run, a test to pass, a behaviour to observe
+- Specific enough that the implementor knows exactly how to check
+
+## Format
+
+```
+1. [Milestone objective]
+   Approach:
+   - [technical context, guidance, pattern to follow]
+   - [library/tool choice and why]
+   - ⚠️ [gotcha or high-stakes item]
+   Tasks:
+   - [concrete unit of work]
+   - [concrete unit of work]
+   Deliverable: [single testable outcome]
+   Verify: [how to confirm]
+```
 
 ## Rules
 
 1. **Each milestone has exactly ONE deliverable**
-   - Deliverables must be testable and measurable
    - Avoid compound deliverables ("X works AND Y works")
 
 2. **Prefer smaller milestones over large ones**
@@ -19,193 +63,150 @@ Break work into incremental, testable deliverables that can be implemented and v
    - Infrastructure before features
    - Core functionality before enhancements
 
-4. **Tasks should be concrete and actionable**
-   - Avoid vague tasks like "implement everything"
-   - Be specific about what needs to be done
+4. **No unresolved decisions**
+   - The implementor should never need to choose a library or tool
+   - The implementor should never need to decide where new code lives
+   - The implementor should never need to establish a new pattern
+   - If any of these are unresolved, add them to Approach
 
-5. **Deliverables should be demonstrable**
-   - You should be able to show or test the deliverable
-   - Avoid deliverables like "code is written"
+5. **Approach and Tasks don't overlap**
+   - Approach is context and guidance (how and why)
+   - Tasks are units of work (what)
+   - Don't restate approach items as tasks
 
-## Format
+## Validation Checklist
 
-```
-1. [Milestone objective - what we're building]
-   - [Concrete task]
-   - [Concrete task]
-   - [Concrete task]
-   Deliverable: [Single testable outcome]
+Before presenting milestones, audit each one:
 
-2. [Next milestone objective]
-   - [Concrete task]
-   - [Concrete task]
-   Deliverable: [Single testable outcome]
-```
+- [ ] Would the implementor need to choose a library or tool? → resolve in Approach
+- [ ] Would the implementor need to decide where new code lives? → resolve in Approach
+- [ ] Would the implementor need to establish a new pattern? → resolve in Approach
+- [ ] Are Tasks specific enough to track progress?
+- [ ] Is the Deliverable a single testable outcome?
+- [ ] Does Verify give a concrete way to confirm?
 
 ## Good Examples
 
-### Example 1: Authentication Feature
-
-```
-1. Set up project structure and dependencies
-   - Initialize repository with standard structure
-   - Configure build tooling
-   - Add core dependencies (Express, PostgreSQL client, Redis client)
-   Deliverable: Project builds successfully with no errors
-
-2. Implement database schema and migrations
-   - Create users table with GitHub ID and email
-   - Create sessions table with token and expiry
-   - Add migration tooling
-   Deliverable: Database schema is created and migrations run successfully
-
-3. Implement GitHub OAuth flow
-   - Create OAuth redirect endpoint
-   - Implement callback handler
-   - Exchange authorization code for access token
-   Deliverable: Users can authorize via GitHub and API receives access token
-
-4. Implement session management
-   - Create session on successful OAuth
-   - Store session in PostgreSQL
-   - Return session cookie to client
-   Deliverable: Users receive session cookie after successful login
-
-5. Add authentication middleware
-   - Create middleware to validate session token
-   - Protect endpoints with authentication check
-   - Return 401 for invalid/missing tokens
-   Deliverable: Protected endpoints require valid session token
-```
-
-*Why good: Each milestone has a single, testable deliverable. Milestones are ordered by dependency. Tasks are concrete and actionable.*
-
----
-
-### Example 2: Rate Limiting Feature
+### Example 1: Rate Limiting
 
 ```
 1. Set up Redis rate limit storage
-   - Add Redis client configuration
-   - Create rate limit key schema (api_key:timestamp)
-   - Add TTL management for automatic cleanup
-   Deliverable: Redis stores and expires rate limit counters correctly
+   Approach:
+   - Use ioredis client (already in project, see src/config/redis.ts)
+   - Key format: ratelimit:{api_key}:{minute_bucket}
+   - TTL matches rate limit window — counters self-expire
+   Tasks:
+   - Add rate limit config to src/config/index.ts (RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_SECONDS)
+   - Create rate limit storage module in src/services/rate-limit-store.ts
+   - Add unit tests for counter increment and expiry logic
+   Deliverable: Rate limit counters increment and expire correctly in Redis
+   Verify: Run rate limit store tests — counters increment, expire after window
 
 2. Implement rate limiting middleware
-   - Create middleware function
-   - Add token bucket logic
-   - Integrate with existing auth middleware
+   Approach:
+   - Follow existing middleware pattern in src/middleware/auth.ts
+   - Token bucket algorithm — check counter, increment, reject if over limit
+   - ⚠️ Middleware order matters — register after CORS, before auth
+   - On Redis failure: fail open (allow request), log error at warn level
+   Tasks:
+   - Create src/middleware/rate-limit.ts with token bucket logic
+   - Register middleware in src/app.ts pipeline
+   - Add integration test for rate limit rejection
    Deliverable: API returns 429 when rate limit exceeded
+   Verify: Run test suite; send 101 requests in under a minute, confirm 429 on 101st
 
 3. Add rate limit response headers
-   - Include X-RateLimit-Remaining in all responses
-   - Include Retry-After header on 429 responses
-   - Document header format
+   Approach:
+   - Add headers in the rate limit middleware (not a separate middleware)
+   - Include on all responses, not just 429s
+   Tasks:
+   - Add X-RateLimit-Remaining header to all responses
+   - Add X-RateLimit-Reset header to all responses
+   - Add Retry-After header to 429 responses
+   - Update integration tests to verify headers
    Deliverable: All responses include rate limit headers
+   Verify: Run test suite; check headers on both allowed and rejected requests
 ```
 
-*Why good: Small, focused milestones. Each deliverable is independently testable. Clear progression from infrastructure to feature to enhancement.*
-
----
-
-### Example 3: Data Migration
+### Example 2: Database Migration
 
 ```
-1. Create migration script structure
-   - Set up migration framework
-   - Add rollback capability
-   - Create dry-run mode
-   Deliverable: Migration script runs in dry-run mode without errors
+1. Create migration infrastructure
+   Approach:
+   - Use existing knex migration framework (already configured in src/db/)
+   - ⚠️ Target table has ~10M rows — column addition must not lock table
+   - Strategy: add nullable column first, backfill in batches, then add NOT NULL constraint
+   Tasks:
+   - Create migration file for adding nullable column
+   - Create backfill script in scripts/backfill-user-status.ts
+   - Create follow-up migration for NOT NULL constraint
+   Deliverable: Migration adds column without table locks
+   Verify: Run migration against test database copy; confirm no lock wait timeouts
 
-2. Implement data extraction
-   - Query source database
-   - Transform data to target schema
-   - Handle missing or invalid data
-   Deliverable: Script extracts and transforms all records successfully
-
-3. Implement data loading with validation
-   - Load transformed data to target database
-   - Validate data integrity after load
-   - Log any validation failures
-   Deliverable: Data loads successfully with validation passing
-
-4. Add monitoring and rollback
-   - Track migration progress
-   - Implement rollback on failure
-   - Add completion verification
-   Deliverable: Migration completes with verification or rolls back on error
+2. Update application code for new column
+   Approach:
+   - Update User model in src/models/user.ts
+   - New column has default value 'active' — existing code paths don't need changes
+   - Only new feature code reads/writes the column
+   Tasks:
+   - Add status field to User model and types
+   - Update user creation to set status explicitly
+   - Add status filter to user listing endpoint
+   Deliverable: Application reads and writes the new status column
+   Verify: Run test suite; create user via API, confirm status field in response
 ```
-
-*Why good: Incremental approach with safety measures. Each milestone builds on the previous. Deliverables are measurable.*
-
----
 
 ## Bad Examples
 
-### Bad Example 1: Too Large
+### Too Vague — No Approach
 
 ```
-1. Build the entire authentication system
-   - Everything related to auth
-   Deliverable: Auth works
+1. Build the rate limiter
+   Tasks:
+   - Implement rate limiting
+   - Add tests
+   Deliverable: Rate limiting works
+   Verify: Test it
 ```
 
-*Why bad: Too large, vague tasks, untestable deliverable. Should be broken into 5-10 smaller milestones.*
+*Why bad: No approach — implementor must decide everything. Tasks are vague. Deliverable
+and verify are not specific.*
 
----
-
-### Bad Example 2: Multiple Deliverables
-
-```
-1. Implement authentication and rate limiting
-   - Create OAuth flow
-   - Add session management
-   - Implement rate limiter
-   - Add response headers
-   Deliverable: Users can log in AND rate limiting works
-```
-
-*Why bad: Multiple deliverables in one milestone. Should be split into separate milestones for auth and rate limiting.*
-
----
-
-### Bad Example 3: Non-Testable Deliverable
+### Approach Duplicates Tasks
 
 ```
-1. Write authentication code
-   - Write the code
-   - Make it good
-   Deliverable: Code is written
+1. Add Redis storage
+   Approach:
+   - Add Redis client configuration
+   - Create rate limit key schema
+   - Add TTL management
+   Tasks:
+   - Add Redis client configuration
+   - Create rate limit key schema
+   - Add TTL management
+   Deliverable: Redis stores counters
+   Verify: Run tests
 ```
 
-*Why bad: Deliverable is not testable or measurable. What does "code is written" mean? How do you verify it?*
+*Why bad: Approach and Tasks say the same thing. Approach should explain how/why
+(which client, what key format, why TTL). Tasks should list what to build.*
 
-**Better:**
-```
-1. Implement OAuth callback handler
-   - Create callback endpoint
-   - Exchange authorization code for token
-   - Handle OAuth errors
-   Deliverable: Callback endpoint successfully exchanges codes for tokens
-```
-
----
-
-### Bad Example 4: Wrong Order
+### Unresolved Decisions
 
 ```
-1. Add authentication middleware
-   - Create middleware to validate tokens
-   Deliverable: Middleware validates tokens
-
-2. Implement session creation
-   - Create sessions on login
-   Deliverable: Sessions are created
+1. Add request validation
+   Approach:
+   - Choose a validation library
+   - Decide on validation strategy
+   Tasks:
+   - Research validation options
+   - Implement validation
+   Deliverable: Requests are validated
+   Verify: Send invalid request, confirm rejection
 ```
 
-*Why bad: Milestone 1 depends on milestone 2 (can't validate tokens that don't exist yet). Order should be reversed.*
-
----
+*Why bad: "Choose a validation library" is an unresolved decision — this should have been
+resolved during planning. The implementor should never need to research options.*
 
 ## Tips
 
@@ -215,39 +216,17 @@ If a milestone feels too large, ask:
 - Can this be split into infrastructure + implementation?
 - Can this be split into core functionality + enhancements?
 - Can this be split into happy path + error handling?
-- Can this be split by component or layer?
 
 ### Writing Good Deliverables
 
-Good deliverables answer:
-- What can I test or demonstrate?
-- What observable behavior changes?
-- What new capability exists?
+Good deliverables answer: "what observable behaviour changes?"
 
-Avoid deliverables like:
-- "Code is written"
-- "Feature is complete"
-- "Everything works"
+Avoid: "Code is written", "Feature is complete", "Everything works"
+Prefer: "API returns 429 when rate limit exceeded", "Users can log in via GitHub"
 
-Prefer deliverables like:
-- "API returns 429 when rate limit exceeded"
-- "Users can log in via GitHub"
-- "Database schema is created"
+### Writing Good Verify Steps
 
-### Ordering Milestones
+Good verify steps answer: "how do I prove this works?"
 
-Think about:
-- What needs to exist before this can work?
-- What's the minimal foundation?
-- What can be tested independently?
-- What provides the most value earliest?
-
-### Task Granularity
-
-Tasks should be:
-- Specific enough to guide implementation
-- Not so detailed that they prescribe exact code
-- Focused on what needs to be done, not how
-
-Good task: "Create OAuth redirect endpoint"
-Bad task: "Create a function called handleOAuthRedirect that takes req and res parameters and..."
+Avoid: "Test it", "Check it works"
+Prefer: "Run test suite", "Send POST to /api/users with invalid email, confirm 400 response"

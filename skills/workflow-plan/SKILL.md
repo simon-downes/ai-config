@@ -1,100 +1,156 @@
 ---
 name: workflow-plan
-description: Guide complete planning workflow from vague intent to executable implementation plan through structured requirements gathering, technical design, and milestone breakdown. Use when starting projects that need comprehensive planning before implementation, creating detailed plans for complex features, or turning high-level ideas into actionable work with clear deliverables.
+description: >
+  Guide complete planning workflow from vague intent to executable implementation plan
+  through structured requirements gathering, technical design, and milestone breakdown.
+  Use when starting projects that need comprehensive planning before implementation,
+  creating detailed plans for complex features, or turning high-level ideas into
+  actionable work with clear deliverables.
 ---
 
-# General Planning
+# Purpose
 
-## Purpose
+Guide the complete planning process from vague intent to a self-contained plan artifact
+that can be implemented in a future session with zero existing context.
 
-Guide the complete planning process from vague intent to detailed execution plan. This skill orchestrates three phases: requirements gathering, technical design, and milestone planning.
+---
 
-## When to Use
+# When to Use
 
-- Starting new projects or features that need comprehensive planning
+- Starting new projects or features that need planning before implementation
 - User provides initial direction but needs structured planning
 - Work requires investigation and design before implementation
-- Creating plans that will be stored as artifacts for execution
 
-## When Not to Use
+# When Not to Use
 
 - Simple bug fixes or trivial changes
 - Work that's already well-defined with clear requirements
 - Quick exploratory tasks
 
-## Planning Artifacts
+---
+
+# Planning Artifacts
 
 Plans are stored as:
-- `~/plans/<project>/<date>-<description>-PLAN.md` - Complete plan document
-- `~/plans/<project>/<date>-<description>-LOG.md` - Implementation progress log
+- `~/plans/<project>/<date>-<description>-PLAN.md` — complete plan document
+- `~/plans/<project>/<date>-<description>-LOG.md` — implementation progress log
 
-## Three-Phase Planning Process
+---
 
-### Phase 1: Objective + Requirements
+# Three-Phase Planning Process
 
-**Goal:** Transform vague intent into clear, testable requirements.
+## Phase 1: Objective + Requirements
 
-**Steps:**
+**Goal:** Transform vague intent into clear, testable requirements with all ambiguity resolved.
 
-1. **Write Objective** - Concise problem description and desired outcome (2-4 sentences)
+1. **Write Objective** — concise problem description and desired outcome (2-4 sentences)
 
-2. **Analyze Initial Input** - Identify core objective, what's stated, what's implied, obvious gaps
+2. **Analyse Initial Input** — identify core objective, what's stated, what's implied, obvious gaps
 
-3. **Identify Gaps** - Error handling, edge cases, validation, security, performance expectations
+3. **Investigate the Codebase** — before asking the user anything, explore the codebase to answer
+   discoverable questions: existing patterns, conventions, dependencies, relevant modules.
+   Use `action-analyze-codebase` for unfamiliar repos.
 
-4. **Ask Clarifying Questions** - ONE at a time, target critical gaps first, offer options, iterate
+4. **Resolve the Decision Tree** — systematically walk through each branch of the design space.
+   For each open question:
+   - If answerable from the codebase → resolve it, state what you found
+   - If a preference or intent question → ask the user, ONE question at a time, with your
+     recommended answer and alternatives
+   - Build on previous answers — each resolution may open new branches
 
-5. **Draft Requirements** - Use RFC 2119 keywords (MUST/SHOULD/MAY), focus on observable behavior, add testable acceptance criteria, group logically
+5. **Draft Requirements** — use RFC 2119 keywords (MUST/SHOULD/MAY), focus on observable
+   behaviour, add testable acceptance criteria, group logically
 
-6. **Iterate Until Approved** - Present to user, incorporate feedback, refine until confirmed
+6. **Iterate Until Approved** — present to user, incorporate feedback, refine until confirmed
 
 **Approval Gate:** "Do the objective and requirements look correct?"
 
-See [requirements guide](references/REQUIREMENTS.md) for detailed format rules and examples.
+See [references/REQUIREMENTS.md](references/REQUIREMENTS.md) for format rules and examples.
 
 ---
 
-### Phase 2: Technical Design
+## Phase 2: Technical Design
 
-**Goal:** Explain how the system will be built to satisfy requirements.
+**Goal:** Resolve all cross-cutting technical decisions so the implementor never needs to choose
+a dependency, decide where code lives, or establish a new pattern.
 
-**Steps:**
+1. **Identify Cross-Cutting Decisions** — review the requirements and determine what needs
+   resolving at the project/feature level:
+   - Technology choices (libraries, frameworks, tools)
+   - Structural decisions (where new code lives, module boundaries)
+   - Patterns and conventions (especially for greenfield work)
+   - Infrastructure and deployment considerations
+   - Non-functional concerns (security, observability, performance)
 
-1. **Understand Context** - Review requirements, identify work type
+2. **Resolve from Codebase First** — for existing projects, many decisions are already made.
+   Reference existing patterns rather than re-deciding. Call out where this work deviates
+   from established patterns and why.
 
-2. **Select Relevant Sections** - Choose from available sections based on work type, skip what doesn't apply
+3. **Draft Design** — document resolved decisions with rationale. Focus on choices and their
+   reasoning, not system descriptions. Keep it concise.
 
-3. **Draft Design** - Write selected sections concisely, focus on decisions and structure, include examples
-
-4. **Review with User** - Present design, iterate based on feedback
+4. **Review with User** — present design, iterate based on feedback
 
 **After approval, automatically proceed to Phase 3.**
 
-See [design guide](references/DESIGN.md) for available sections and selection guidance.
+See [references/DESIGN.md](references/DESIGN.md) for decision categories and examples.
 
 ---
 
-### Phase 3: Milestones
+## Phase 3: Milestones
 
-**Goal:** Break work into incremental, testable deliverables.
+**Goal:** Break work into incremental, testable deliverables with enough technical context
+that an implementor in a fresh session can execute without re-discovering decisions.
 
-**Steps:**
+Each milestone has four sections:
 
-1. **Create Milestones** - Each has exactly ONE testable deliverable, prefer smaller milestones, order by dependency
+- **Approach** — technical context that shapes how the work is done: which libraries/patterns
+  to use, where in the codebase this fits, constraints, and ⚠️ gotchas. The "how and why."
+- **Tasks** — concrete units of work to complete, in roughly the order they should happen.
+  The "what gets done."
+- **Deliverable** — single testable outcome. What's true when this milestone is complete.
+- **Verify** — how to confirm the deliverable. A command to run, a test to pass, a behaviour
+  to observe.
 
-2. **Format:**
-   ```
-   1. [Milestone objective]
-      - task
-      - task
-      Deliverable: [testable outcome]
-   ```
+**Format:**
+```
+1. [Milestone objective]
+   Approach:
+   - [technical context, guidance, constraints]
+   - ⚠️ [gotchas or high-stakes items]
+   Tasks:
+   - [concrete unit of work]
+   - [concrete unit of work]
+   Deliverable: [single testable outcome]
+   Verify: [how to confirm]
+```
 
-3. **Present Complete Plan** - Show all three phases together
+**Before presenting milestones, audit each one:**
+- Would the implementor need to choose a library or tool? → resolve in Approach
+- Would the implementor need to decide where new code lives? → resolve in Approach
+- Would the implementor need to establish a new pattern? → resolve in Approach
+- Are Tasks specific enough to track progress but not so detailed they prescribe code?
+- Does Verify give a concrete way to confirm the deliverable?
+
+**Present Complete Plan** — show all three phases together.
 
 **Approval Gate:** "Here is the complete plan. Shall we move to Implementation Mode?"
 
-See [milestone guide](references/MILESTONES.md) for detailed rules and examples.
+See [references/MILESTONES.md](references/MILESTONES.md) for detailed rules and examples.
+
+---
+
+## Key Principles
+
+- **Plan as artifact** — the plan must be self-contained. An implementing agent in a fresh
+  session with zero context should be able to execute it.
+- **Resolve decisions, don't defer them** — the plan must resolve all dependency, tooling,
+  and structural decisions. The implementor should never need to choose a library, decide
+  where new code lives, or establish a new pattern.
+- **Codebase first** — before asking the user a question, check if the answer is discoverable
+  from existing code, docs, or manifests.
+- **One question at a time** — when you do need user input, ask one focused question with
+  your recommended answer and alternatives.
 
 ---
 
@@ -108,20 +164,22 @@ See [milestone guide](references/MILESTONES.md) for detailed rules and examples.
   - Why: <optional context>
 ```
 
-**RFC 2119 Keywords:**
-- **MUST** — Mandatory behavior
-- **SHOULD** — Strongly recommended
-- **MAY** — Optional capability
+### Design Focus
 
-Default to MUST unless clear reason for SHOULD or MAY.
+Resolve cross-cutting decisions:
+- Technology choices and rationale
+- Structural decisions (where code lives)
+- Patterns and conventions to follow
+- Non-functional concerns
 
-### Design Section Selection
+### Milestone Sections
 
-- **Small feature:** Overview, Components, Data Flow
-- **New service:** Most or all sections
-- **Infrastructure:** Overview, Architecture, Technical Stack, Key Decisions
-- **Integration:** Overview, External Integrations, Data Flow, Non-Functional
-- **Refactoring:** Overview, Components, Key Decisions, Risks
+| Section     | Purpose                                    |
+|-------------|--------------------------------------------|
+| Approach    | How and why — context, guidance, constraints |
+| Tasks       | What — concrete units of work              |
+| Deliverable | Done when — single testable outcome        |
+| Verify      | Proof — how to confirm                     |
 
 ### Milestone Rules
 
@@ -129,69 +187,4 @@ Default to MUST unless clear reason for SHOULD or MAY.
 - Deliverables must be testable
 - Prefer smaller over larger
 - Order by dependency
-
----
-
-## Example Workflow
-
-**User Request:** "I need to add rate limiting to our API"
-
-**Phase 1 Output:**
-```
-Objective: Add rate limiting to the API to prevent abuse and ensure fair usage.
-
-Requirements:
-- MUST enforce rate limit of 100 requests per minute per API key
-  - AC: Requests exceeding limit return HTTP 429
-  - AC: Response includes Retry-After header
-- MUST persist rate limit counters across API restarts
-  - AC: Counter state survives application restart
-- SHOULD include rate limit status in response headers
-  - AC: Responses include X-RateLimit-Remaining header
-```
-
-**Phase 2 Output:**
-```
-# Technical Design: API Rate Limiting
-
-## Overview
-Implement token bucket rate limiting using Redis for distributed counter storage.
-
-## Technical Stack
-- Redis: Rate limit counter storage
-- Middleware: Express rate-limit middleware
-- Storage: Redis cluster (existing)
-
-## Data Flow
-1. Request arrives at API
-2. Middleware extracts API key
-3. Check Redis for current token count
-4. If tokens available: decrement and allow
-5. If no tokens: return 429 with Retry-After
-
-## Key Decisions
-- Redis chosen for atomic operations and TTL support
-- Token bucket algorithm for smooth rate limiting vs fixed window
-```
-
-**Phase 3 Output:**
-```
-Milestones:
-
-1. Set up Redis rate limit storage
-   - Add Redis client configuration
-   - Create rate limit key schema
-   - Add TTL management
-   Deliverable: Redis stores and expires rate limit counters correctly
-
-2. Implement rate limiting middleware
-   - Create middleware function
-   - Add token bucket logic
-   - Integrate with existing auth middleware
-   Deliverable: API returns 429 when rate limit exceeded
-
-3. Add rate limit response headers
-   - Include X-RateLimit-Remaining
-   - Include Retry-After on 429
-   Deliverable: All responses include rate limit headers
-```
+- No unresolved decisions left for the implementor
