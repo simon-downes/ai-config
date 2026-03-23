@@ -188,6 +188,26 @@ ak log add --kind request "analysed qa-runner prompt gaps: recommended run-all-c
 
 ------------------------------------------------------------------------
 
+# SUBAGENT USAGE
+
+When delegating work to subagents, use the `general-purpose` agent for ad-hoc tasks
+(research, investigation, analysis, running commands). Only use named agents for their
+specific purposes:
+
+| Agent              | Use for                                      |
+|--------------------|----------------------------------------------|
+| `general-purpose`  | Default — research, investigation, ad-hoc tasks |
+| `code-reviewer`    | Code quality review (via workflow-review)     |
+| `plan-reviewer`    | Plan quality review (via action-review-plan)  |
+| `qa-runner`        | Formatting, linting, tests (via workflow-review) |
+| `codebase-analyzer`| Deep codebase analysis (via action-analyze-codebase) |
+
+Always specify `agent_name: "general-purpose"` when spawning subagents for general
+tasks. Without an explicit agent name, the system uses kiro-default which has
+restricted tool access.
+
+------------------------------------------------------------------------
+
 # PLANNING WORKFLOW
 
 ## When to Create a Plan

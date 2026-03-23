@@ -115,7 +115,13 @@
       "autoAllowReadonly": true
     },
     "use_subagent": {
-      "trustedAgents": []
+      "trustedAgents": [
+        "general-purpose",
+        "code-reviewer",
+        "plan-reviewer",
+        "qa-runner",
+        "codebase-analyzer"
+      ]
     }
   },
   "resources": [
