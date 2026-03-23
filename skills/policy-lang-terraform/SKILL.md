@@ -79,29 +79,10 @@ Examples: `main.tf`, `lambda-processor.tf`, `api-gateway.tf`
 
 **Small projects:** Use `main.tf` for all resources
 
-**Larger projects:** Split by logical grouping using one of these strategies:
-
-**By service/provider** (common for AWS/cloud infrastructure):
-- `dynamodb.tf` - All DynamoDB resources
-- `lambda-processor.tf` - Lambda function and related resources
-- `eventbridge.tf` - All EventBridge resources
-- Prefix related files: `lambda-processor.tf`, `lambda-consumer.tf`
-
-**By component/functionality** (common for applications):
-- `api.tf` - API gateway, routes, integrations
-- `database.tf` - Database, connection pooling, migrations
-- `monitoring.tf` - Logging, metrics, alerts
-- `networking.tf` - VPC, subnets, security groups
-
-**By layer/tier** (common for multi-tier architectures):
-- `frontend.tf` - CDN, static hosting, DNS
-- `backend.tf` - Application servers, load balancers
-- `data.tf` - Databases, caches, queues
-- `security.tf` - IAM, secrets, encryption
-
-**Guidelines:**
-- Choose ONE strategy and apply consistently
-- Keep related resources together (e.g., IAM roles with the resources they support)
+**Larger projects:** Split by logical grouping — by service (`dynamodb.tf`, `lambda-processor.tf`),
+by component (`api.tf`, `database.tf`, `monitoring.tf`), or by layer (`frontend.tf`, `backend.tf`).
+Choose ONE strategy and apply consistently. Keep related resources together (e.g., IAM roles
+with the resources they support). Prefix related files: `lambda-processor.tf`, `lambda-consumer.tf`.
 
 ## Code Structure
 
@@ -138,6 +119,15 @@ resource "aws_lambda_function" "processor" {
   runtime       = "python3.11"
   handler       = "main.handler"
   role          = aws_iam_role.processor.arn
+  timeout       = 300
+  memory_size   = 512
+
+  environment {
+    variables = {
+      TABLE_NAME = aws_dynamodb_table.events.name
+      LOG_LEVEL  = var.log_level
+    }
+  }
 
   tags = local.common_tags
 
@@ -156,83 +146,37 @@ resource "aws_lambda_function" "processor" {
 **Format:** `<namespace>-<purpose>`
 
 Where `<namespace>` consists of:
-- `<application>-<environment-key>-<region-key>-` for resources outside default region (eu-west-1)
 - `<application>-<environment-key>-` for resources in default region (eu-west-1)
+- `<application>-<environment-key>-<region-key>-` for resources outside default region
 
 **Components:**
 - `<application>` - Application name (from organizational standards)
 - `<environment-key>` - 3-letter environment key (e.g., `dev`, `stg`, `prd`)
-- `<region-key>` - 4-letter region code (e.g., `use1` for us-east-1, `euw2` for eu-west-2) - only when not in eu-west-1
+- `<region-key>` - 4-letter region code (e.g., `use1` for us-east-1, `euw2` for eu-west-2)
 - `<purpose>` - Resource name/purpose in relation to the application
 
 **Examples:**
-
 ```hcl
-# S3 bucket in eu-west-1 (default region)
+# Default region (eu-west-1) — no region key
 resource "aws_s3_bucket" "uploads" {
   bucket = "${local.application}-${local.environment_key}-uploads"
-  # Example: myapp-dev-uploads
+  # Result: myapp-dev-uploads
 }
 
-# S3 bucket in us-east-1 (non-default region)
+# Non-default region — include region key
 resource "aws_s3_bucket" "uploads_us" {
   bucket = "${local.application}-${local.environment_key}-use1-uploads"
-  # Example: myapp-dev-use1-uploads
-}
-
-# Lambda function in eu-west-1
-resource "aws_lambda_function" "processor" {
-  function_name = "${local.application}-${local.environment_key}-processor"
-  # Example: myapp-dev-processor
-}
-
-# DynamoDB table in eu-west-1
-resource "aws_dynamodb_table" "events" {
-  name = "${local.application}-${local.environment_key}-events"
-  # Example: myapp-dev-events
-}
-
-# IAM role in eu-west-1
-resource "aws_iam_role" "processor" {
-  name = "${local.application}-${local.environment_key}-processor-role"
-  # Example: myapp-dev-processor-role
-}
-
-# EventBridge rule in eu-west-1
-resource "aws_cloudwatch_event_rule" "daily" {
-  name = "${local.application}-${local.environment_key}-daily-trigger"
-  # Example: myapp-dev-daily-trigger
-}
-
-# CloudWatch Log Group in eu-west-1
-resource "aws_cloudwatch_log_group" "processor" {
-  name = "/aws/lambda/${local.application}-${local.environment_key}-processor"
-  # Example: /aws/lambda/myapp-dev-processor
+  # Result: myapp-dev-use1-uploads
 }
 ```
 
 **Use kebab-case** for resource names. Use shorter alternatives when AWS service length restrictions apply.
 
+Log groups follow AWS conventions: `/aws/lambda/${local.application}-${local.environment_key}-<name>`
+
 ### Variables and Locals
 
-**Use snake_case** for variable and local names.
-
-Use descriptive names that clearly indicate purpose.
-
-**Examples:**
-```hcl
-variable "log_retention_days" {
-  description = "Number of days to retain CloudWatch logs"
-  type        = number
-  default     = 7
-}
-
-locals {
-  namespace      = "${var.application}-${var.environment_key}"
-  lambda_timeout = 300
-  common_tags    = merge(var.tags, { managed_by = "terraform" })
-}
-```
+**Use snake_case** for variable and local names. Use descriptive names that clearly indicate purpose.
 
 ## Resource Tagging
 
@@ -271,11 +215,12 @@ resource "datadog_monitor" "api_errors" {
 
 ## IAM Policies
 
-**Prefer inline policies on roles.** Only create separate `aws_iam_policy` resources when the policy will be attached to multiple roles.
+**Prefer inline policies on roles.** Only create separate `aws_iam_policy` resources when
+the policy will be attached to multiple roles.
 
 **Prefer `jsonencode({})`** over `aws_iam_policy_document` data sources for policy documents.
 
-**Good - Inline policy:**
+**Example — inline policy with assume role:**
 ```hcl
 resource "aws_iam_role" "processor" {
   name = "${local.namespace}-processor-role"
@@ -310,56 +255,8 @@ resource "aws_iam_role" "processor" {
 }
 ```
 
-**Good - Shared policy (used by multiple roles):**
-```hcl
-resource "aws_iam_policy" "s3_read" {
-  name        = "${local.namespace}-s3-read"
-  description = "Allow read access to application S3 buckets"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Action = [
-        "s3:GetObject",
-        "s3:ListBucket"
-      ]
-      Resource = [
-        aws_s3_bucket.uploads.arn,
-        "${aws_s3_bucket.uploads.arn}/*"
-      ]
-    }]
-  })
-
-  tags = local.common_tags
-}
-
-resource "aws_iam_role_policy_attachment" "processor_s3" {
-  role       = aws_iam_role.processor.name
-  policy_arn = aws_iam_policy.s3_read.arn
-}
-
-resource "aws_iam_role_policy_attachment" "consumer_s3" {
-  role       = aws_iam_role.consumer.name
-  policy_arn = aws_iam_policy.s3_read.arn
-}
-```
-
-**Bad - Unnecessary separate policy:**
-```hcl
-# Don't create a separate policy if it's only used once
-resource "aws_iam_policy" "processor_dynamodb" {
-  name = "${local.namespace}-processor-dynamodb"
-  policy = jsonencode({
-    # ... policy document ...
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "processor_dynamodb" {
-  role       = aws_iam_role.processor.name
-  policy_arn = aws_iam_policy.processor_dynamodb.arn
-}
-```
+When a policy is shared across multiple roles, extract to `aws_iam_policy` +
+`aws_iam_role_policy_attachment`.
 
 ## Module Creation
 
@@ -378,123 +275,3 @@ Terraform modules MUST follow semantic versioning (semver: MAJOR.MINOR.PATCH).
 - `refactor:`, `docs:`, `chore:` → PATCH version bump (if released)
 
 **Commit format follows tool-git-github skill conventions.**
-
-**Examples:**
-- `feat: add encryption support` → 1.2.0 → 1.3.0
-- `fix: correct IAM policy syntax` → 1.2.0 → 1.2.1
-- `major: remove deprecated variables` → 1.2.0 → 2.0.0
-
-## Good vs Bad Examples
-
-### File Organization
-
-**Good:**
-```
-terraform/
-├── providers.tf
-├── variables.tf
-├── outputs.tf
-├── locals.tf
-├── dynamodb.tf
-├── lambda-processor.tf
-├── lambda-consumer.tf
-├── eventbridge.tf
-└── README.md
-```
-
-**Bad:**
-```
-terraform/
-├── main.tf              # Everything in one file
-├── iam.tf               # IAM separated from resources
-├── lambda_processor.tf  # Inconsistent naming (underscore)
-└── Lambda-Consumer.tf   # Wrong case
-```
-
-### Resource Definition
-
-**Good:**
-```hcl
-resource "aws_lambda_function" "processor" {
-  for_each = var.environments
-
-  function_name = "${local.namespace}-processor"
-  runtime       = "python3.11"
-  handler       = "main.handler"
-  role          = aws_iam_role.processor.arn
-  timeout       = 300
-  memory_size   = 512
-
-  environment {
-    variables = {
-      TABLE_NAME = aws_dynamodb_table.events.name
-      LOG_LEVEL  = var.log_level
-    }
-  }
-
-  tags = local.common_tags
-
-  depends_on = [aws_cloudwatch_log_group.processor]
-}
-```
-
-**Bad:**
-```hcl
-resource "aws_lambda_function" "processor" {
-  # Missing for_each at top
-  runtime       = "python3.11"
-  function_name = "${local.namespace}-processor"
-  role          = aws_iam_role.processor.arn
-
-  # Missing description, timeout, memory_size
-
-  handler = "main.handler"
-
-  depends_on = [aws_cloudwatch_log_group.processor]
-
-  # Tags should be before meta-arguments
-  tags = local.common_tags
-
-  for_each = var.environments  # Should be first
-
-  environment {
-    variables = {
-      TABLE_NAME = aws_dynamodb_table.events.name
-    }
-  }
-}
-```
-
-### Variable Definition
-
-**Good:**
-```hcl
-variable "log_retention_days" {
-  description = "Number of days to retain CloudWatch logs"
-  type        = number
-  default     = 7
-
-  validation {
-    condition     = contains([1, 3, 5, 7, 14, 30, 60, 90], var.log_retention_days)
-    error_message = "Log retention must be one of: 1, 3, 5, 7, 14, 30, 60, 90 days."
-  }
-}
-
-variable "environment" {
-  description = "Environment name (dev, stg, prd)"
-  type        = string
-}
-```
-
-**Bad:**
-```hcl
-variable "log_retention_days" {
-  default     = 7  # Wrong order
-  type        = number
-  # Missing description
-}
-
-variable "environment" {
-  # Missing type and description
-}
-```
