@@ -1,21 +1,32 @@
 ---
 name: workflow-implement
 description: >
-  Execute approved implementation plans through milestone-based workflow with task generation and progress tracking. Use when implementing approved plans from PLAN.md files.
+  Execute approved implementation plans through milestone-based workflow with progress
+  tracking and activity logging. Use when implementing approved plans from PLAN.md files.
 ---
 
-# General Implementor
+# Purpose
 
-Execute approved plans by working through milestones sequentially, generating implementation tasks, and tracking progress.
+Execute approved plans by working through milestones sequentially, tracking progress
+via `ak log`.
 
-## When to Use
+---
+
+# When to Use
 
 - User approves a plan and requests implementation
 - Executing milestones from `~/plans/<project>/<date>-<description>-PLAN.md`
 
-## Workflow
+# When Not to Use
 
-### 1. Load Plan
+- Work that doesn't have an approved plan (use workflow-plan first)
+- Reviewing completed work (use workflow-review)
+
+---
+
+# Workflow
+
+## 1. Load Plan
 
 Read the plan file:
 ```
@@ -24,121 +35,122 @@ Read the plan file:
 
 Verify it contains: Objective, Requirements, Technical Design, and Milestones.
 
-If incomplete or unclear → ask for clarification.
+If incomplete or unclear → ask for clarification before proceeding.
 
-### 2. Initialize Progress Log
+## 2. Execute Each Milestone
 
-Create:
-```
-~/plans/<project>/<date>-<description>-LOG.md
-```
+For each milestone, work through these steps:
 
-Format:
-```markdown
-# Implementation Log
+### A. Understand the Context
 
-Plan: [PLAN.md](./YYYY-MM-DD-description-PLAN.md)
-Started: <timestamp>
+Read the milestone's Approach for technical direction, then investigate the relevant areas
+of the codebase to understand implementation details. The Approach narrows where to look;
+use judgment to explore adjacent code as needed.
 
-## Milestone 1: <objective>
-Status: In Progress
-Started: <timestamp>
+Load any skills referenced or implied by the Approach (e.g., if it mentions Terraform
+patterns, load the Terraform skill).
 
-### Tasks
-(generated after investigation)
+### B. Work Through Tasks
 
-### Progress
-<timestamp> - Started milestone
-```
+Implement each task from the milestone's Tasks list:
 
-**LOG.md is append-only** - add entries chronologically, never edit previous entries.
+1. Perform the work following existing conventions and the Approach guidance
+2. Stay focused on the current milestone — don't skip ahead or invent work
 
-### 3. Execute Each Milestone
+If a task is too coarse to implement directly, break it into sub-steps and work
+through them.
 
-For each milestone:
+### C. Verify Deliverable
 
-#### A. Investigate Context
+Two checks:
 
-Before generating tasks:
-- Read relevant files to understand existing patterns
-- Identify conventions and architecture
-- Check for relevant skills that apply to this work
+1. **Code quality** — spawn the `qa-runner` subagent to run formatting, linting, and tests.
+   Fix any failures before proceeding.
+2. **Milestone-specific** — use the milestone's Verify section to confirm the deliverable
+   (a specific command, test, or observable behaviour).
 
-#### B. Generate Task List
+If either check fails → attempt to fix, following the three-attempt limit.
 
-Break milestone deliverable into high-level implementation tasks.
+### D. Commit and Log
 
-Tasks should be:
-- Concrete but not granular (e.g., "Add Redis client configuration", not "Edit config.js")
-- Focused on the milestone objective
-- Aligned with existing project patterns
-
-Add tasks to LOG.md under current milestone.
-
-#### C. Implement Tasks
-
-For each task:
-1. Perform the work following existing conventions
-2. Append progress notes to LOG.md with meaningful context
-3. Stay focused on current milestone - don't skip ahead or invent work
-
-Progress note format:
-```
-<timestamp> - <what was done> (<why, if decision was made>)
-```
-
-#### D. Verify Deliverable
-
-Before completing milestone:
-- Run linting/formatting if available
-- Run tests if available
-- Confirm milestone objective is satisfied
-
-If tests fail → attempt to fix, following agent's three-attempt limit.
-
-#### E. Commit and Mark Complete
-
-If git repository:
+If in a git repository:
 ```bash
-git commit -m "Milestone description"
+git add -A
+git commit -m "<type>: <milestone description>"
 ```
 
-Append to LOG.md:
-```
-<timestamp> - Milestone complete (commit: <hash>)
+Use conventional commit format (see tool-git-github skill).
+
+Log the milestone:
+```bash
+ak log add --kind task "milestone N: <deliverable summary>"
 ```
 
-### 4. Report Progress
+### E. Report and Continue
 
 After each milestone:
-- Report completion to user
+- Report completion to user with a brief summary
 - Confirm before proceeding to next milestone
 
-### 5. Complete Implementation
+## 3. Complete Implementation
 
-When all milestones done:
-- Update LOG.md with completion timestamp
-- Summarize deliverables
-- Ask: "Implementation complete. Would you like to enter Review Mode?"
+When all milestones are done:
 
-## Handling Issues
+1. Log completion:
+   ```bash
+   ak log add --kind task "completed implementation: <plan description>"
+   ```
 
-### Unclear Requirements or Design
+2. Summarise deliverables to user
 
-Stop immediately and ask user for clarification. Document the ambiguity in LOG.md.
+3. Ask: "Implementation complete. Would you like to enter Review Mode?"
 
-### Discovered Work Not in Plan
+---
 
-Complete current milestone as planned, then:
-1. Document discovered work in LOG.md under "Discovered Issues"
+# Activity Logging
+
+Use `ak log` to record checkpoints throughout implementation:
+
+| When | Kind | Example |
+|------|------|---------|
+| Milestone complete | `task` | `milestone 1: rate limit counters increment and expire in Redis` |
+| Implementation decision | `decision` | `used separate Redis DB to isolate rate limit counters from cache` |
+| Discovered unplanned work | `issue` | `API has GraphQL endpoint not addressed in plan` |
+| Blocked or failed | `issue` | `Redis connection failing in test environment, needs config` |
+| All milestones complete | `task` | `completed implementation: API rate limiting` |
+
+**Guidelines:**
+- Log at milestone boundaries, not per-task
+- Log decisions only when deviating from or extending the plan
+- Log issues immediately when discovered
+- One terse line per entry — what happened, not how
+
+---
+
+# Handling Issues
+
+## Unclear Requirements or Design
+
+Stop immediately and ask for clarification.
+
+```bash
+ak log add --kind issue "milestone N blocked: <ambiguity description>"
+```
+
+## Discovered Work Not in Plan
+
+Complete the current milestone as planned, then:
+
+1. Log: `ak log add --kind issue "<description of discovered work>"`
 2. Report to user after milestone completion
 3. Propose plan amendment if needed
 
 **Never implement unplanned work without approval.**
 
-### Plan Appears Flawed
+## Plan Appears Flawed
 
 Stop and discuss with user:
+
 1. Explain the specific issue
 2. Propose concrete amendments to PLAN.md
 3. Show changes in diff format
@@ -146,28 +158,30 @@ Stop and discuss with user:
 
 **Never modify PLAN.md without explicit approval.**
 
-## Key Principles
+See [references/PROBLEM-HANDLING.md](references/PROBLEM-HANDLING.md) for detailed examples.
 
-- **Follow existing patterns** - Consistency with codebase conventions
-- **Stay focused** - Implement current milestone, don't skip ahead
-- **Append-only logging** - Never edit previous LOG.md entries
-- **One milestone at a time** - Complete before moving to next
-- **Stop when unclear** - Don't guess or improvise beyond plan
+---
 
-## Example
+# Key Principles
+
+- **Plan is the source of truth** — Approach gives direction, Tasks define the work,
+  Verify confirms completion. Don't reinvent what the plan already provides.
+- **Autonomy within bounds** — the plan sets direction, but use judgment for
+  implementation-level details it doesn't specify.
+- **Stay focused** — implement the current milestone, don't skip ahead.
+- **Stop when unclear** — don't guess or improvise beyond the plan.
+
+---
+
+# Example
 
 **User:** "Let's implement the plan"
 
 1. Load `~/plans/api-service/2026-03-07-rate-limiting-PLAN.md`
-2. Create `~/plans/api-service/2026-03-07-rate-limiting-LOG.md`
-3. Investigate: Read existing Redis config, middleware patterns
-4. Generate tasks for Milestone 1:
-   - Add Redis client configuration
-   - Create rate limit key schema
-   - Add TTL management
-   - Write unit tests for storage
-5. Implement each task, appending progress to LOG.md
-6. Run tests, commit, mark complete
-7. Report to user, proceed to Milestone 2
+2. Milestone 1: Read Approach (use ioredis, key format, TTL strategy), explore
+   existing Redis config and patterns, implement Tasks, run qa-runner, verify
+3. Commit, `ak log add --kind task`, report to user
+4. Repeat for remaining milestones
+5. Report completion, offer Review Mode
 
-See [execution guide](references/EXECUTION.md) for detailed example.
+See [references/EXECUTION.md](references/EXECUTION.md) for a detailed walkthrough.

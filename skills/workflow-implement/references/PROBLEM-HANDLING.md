@@ -10,7 +10,7 @@
 - Plan doesn't specify how to handle edge cases
 
 **Action:**
-Stop immediately, document in LOG.md, and ask user with specific options if possible.
+Stop immediately, log with `ak log add --kind issue`, and ask user with specific options if possible.
 
 **Example:**
 ```
@@ -33,7 +33,7 @@ Which approach?
 - Discovering related systems not mentioned in plan
 
 **Action:**
-Complete current milestone, document in LOG.md under "Discovered Issues", then report to user.
+Complete current milestone, log with `ak log add --kind issue`, then report to user.
 
 **Do NOT implement unplanned work without approval.**
 

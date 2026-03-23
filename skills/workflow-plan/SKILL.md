@@ -33,7 +33,6 @@ that can be implemented in a future session with zero existing context.
 
 Plans are stored as:
 - `~/plans/<project>/<date>-<description>-PLAN.md` — complete plan document
-- `~/plans/<project>/<date>-<description>-LOG.md` — implementation progress log
 
 ---
 

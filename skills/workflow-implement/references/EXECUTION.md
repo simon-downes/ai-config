@@ -2,192 +2,120 @@
 
 Complete walkthrough of implementing a rate limiting feature.
 
-## Initial Setup
+## Setup
 
 Plan exists at:
 ```
 ~/plans/api-service/2026-03-07-rate-limiting-PLAN.md
 ```
 
-Contains: Objective, Requirements, Technical Design, 3 Milestones
+Contains: Objective, Requirements, Technical Design, 3 Milestones.
 
-## Step 1: Initialize LOG.md
-
-Create `~/plans/api-service/2026-03-07-rate-limiting-LOG.md`:
-
-```markdown
-# Implementation Log
-
-Plan: [2026-03-07-rate-limiting-PLAN.md](./2026-03-07-rate-limiting-PLAN.md)
-Started: 2026-03-07 10:00
-
-## Milestone 1: Set up Redis rate limit storage
-Status: In Progress
-Started: 2026-03-07 10:00
-
-### Tasks
-(to be generated after investigation)
-
-### Progress
-2026-03-07 10:00 - Started milestone
+Milestone 1 from the plan:
+```
+1. Set up Redis rate limit storage
+   Approach:
+   - Use ioredis client (already in project, see src/config/redis.ts)
+   - Key format: ratelimit:{api_key}:{minute_bucket}
+   - TTL matches rate limit window — counters self-expire
+   - ⚠️ Use separate Redis DB to isolate from cache
+   Tasks:
+   - Add rate limit config to src/config/index.ts (RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_SECONDS)
+   - Create rate limit storage module in src/services/rate-limit-store.ts
+   - Add unit tests for counter increment and expiry logic
+   Deliverable: Rate limit counters increment and expire correctly in Redis
+   Verify: Run rate limit store tests — counters increment, expire after window
 ```
 
-## Step 2: Investigate Context
+## Step 1: Understand the Context
 
-Read existing code to understand patterns:
-- `config/redis.js` - existing Redis configuration
-- `src/middleware/` - middleware patterns
-- `tests/` - testing conventions
+Read the Approach: it says to use ioredis (already in project), references `src/config/redis.ts`
+for the existing pattern, and warns about using a separate Redis DB.
 
-Identify: Project uses separate Redis DBs for different concerns, follows module-per-feature structure.
+Investigate:
+- Read `src/config/redis.ts` — understand existing Redis client setup
+- Read `src/config/index.ts` — understand how config values are structured
+- Scan `src/services/` — understand module patterns and conventions
 
-## Step 3: Generate Tasks
+Now you know: project uses separate Redis DBs per concern, config uses typed objects
+validated at startup, services export plain functions.
 
-Based on milestone objective and existing patterns, generate high-level tasks:
+## Step 2: Work Through Tasks
 
-Update LOG.md:
-```markdown
-### Tasks
-- Add Redis client configuration for rate limiting
-- Create rate limit key schema (rate:limit:{apiKey})
-- Add TTL management (60 second expiration)
-- Write unit tests for storage operations
-```
+**Task 1: Add rate limit config**
 
-## Step 4: Implement Tasks
-
-**Task 1: Add Redis client configuration**
-
-Create `src/rate-limit/redis-client.js` following existing Redis pattern:
-```javascript
-const redis = require('redis');
-
-const rateLimitClient = redis.createClient({
-  host: process.env.REDIS_HOST,
-  port: process.env.REDIS_PORT,
-  db: 2
-});
-
-module.exports = rateLimitClient;
-```
-
-Append to LOG.md:
-```markdown
-2026-03-07 10:15 - Created Redis client for rate limiting (separate DB)
-```
-
-**Task 2: Create key schema**
-
-Add `src/rate-limit/storage.js`:
-```javascript
-const KEY_PREFIX = 'rate:limit:';
-const TTL_SECONDS = 60;
-
-function getRateLimitKey(apiKey) {
-  return `${KEY_PREFIX}${apiKey}`;
+Add to `src/config/index.ts` following existing config pattern:
+```typescript
+rateLimiting: {
+  max: env.RATE_LIMIT_MAX ?? 100,
+  windowSeconds: env.RATE_LIMIT_WINDOW_SECONDS ?? 60,
 }
 ```
 
-Append to LOG.md:
-```markdown
-2026-03-07 10:30 - Implemented key schema with rate:limit: prefix
-```
+**Task 2: Create storage module**
 
-**Task 3: Add TTL management**
+Create `src/services/rate-limit-store.ts` following existing service patterns:
+```typescript
+const KEY_PREFIX = 'ratelimit:';
 
-Complete `src/rate-limit/storage.js`:
-```javascript
-async function incrementCounter(apiKey) {
-  const key = getRateLimitKey(apiKey);
-  const count = await client.incr(key);
-  
+export async function incrementCounter(apiKey: string): Promise<number> {
+  const key = `${KEY_PREFIX}${apiKey}:${getMinuteBucket()}`;
+  const count = await redis.incr(key);
   if (count === 1) {
-    await client.expire(key, TTL_SECONDS);
+    await redis.expire(key, config.rateLimiting.windowSeconds);
   }
-  
   return count;
 }
 ```
 
-Append to LOG.md:
-```markdown
-2026-03-07 10:45 - Added TTL management with 60s expiration
-```
+**Task 3: Add tests**
 
-**Task 4: Write tests**
-
-Create `tests/rate-limit/storage.test.js` following project test patterns:
-```javascript
-describe('Rate Limit Storage', () => {
-  it('should expire counters after 60 seconds', async () => {
-    // test implementation
-  });
+Create `tests/services/rate-limit-store.test.ts` following existing test patterns:
+```typescript
+describe('rate-limit-store', () => {
+  it('increments counter for API key', async () => { /* ... */ });
+  it('expires counter after window', async () => { /* ... */ });
+  it('uses separate counter per minute bucket', async () => { /* ... */ });
 });
 ```
 
-Append to LOG.md:
-```markdown
-2026-03-07 11:00 - Added unit tests for storage operations
-```
+## Step 3: Verify
 
-## Step 5: Verify and Complete
+**Code quality:** spawn qa-runner → formatting, linting, tests all pass ✓
 
-Run tests:
+**Milestone-specific:** the plan says "Run rate limit store tests — counters increment,
+expire after window":
 ```bash
-npm test tests/rate-limit/
+npm test tests/services/rate-limit-store.test.ts
 ```
+All pass ✓. Deliverable confirmed.
 
-All pass ✓
+## Step 4: Commit and Log
 
-Commit:
 ```bash
-git commit -m "Set up Redis rate limit storage"
+git add -A
+git commit -m "feat: set up Redis rate limit storage"
+ak log add --kind task "milestone 1: rate limit counters increment and expire in Redis"
 ```
 
-Append to LOG.md:
-```markdown
-2026-03-07 11:15 - Milestone complete (commit: a1b2c3d)
-```
-
-## Step 6: Report Progress
+## Step 5: Report
 
 ```
-Milestone 1 complete: Redis rate limit storage is set up and tested.
+Milestone 1 complete: Rate limit counters increment and expire correctly in Redis.
 
-Next: Milestone 2 - Implement rate limiting middleware
+Next: Milestone 2 — Implement rate limiting middleware
 
 Proceed?
 ```
 
-## Step 7: Continue Remaining Milestones
+## Remaining Milestones
 
-Repeat for Milestones 2 and 3.
+Repeat steps 1-5 for Milestones 2 and 3.
 
-## Step 8: Complete Implementation
+## Completion
 
-Final LOG.md:
-```markdown
-# Implementation Log
-
-Plan: [2026-03-07-rate-limiting-PLAN.md](./2026-03-07-rate-limiting-PLAN.md)
-Started: 2026-03-07 10:00
-Completed: 2026-03-07 14:30
-
-## Summary
-
-All 3 milestones completed:
-1. Redis rate limit storage - a1b2c3d
-2. Rate limiting middleware - b2c3d4e
-3. Response headers - c3d4e5f
-
-## Milestone 1: Set up Redis rate limit storage
-[... details ...]
-
-## Milestone 2: Implement rate limiting middleware
-[... details ...]
-
-## Milestone 3: Add rate limit response headers
-[... details ...]
+```bash
+ak log add --kind task "completed rate limiting implementation: storage, middleware, response headers"
 ```
 
 Report:
@@ -217,66 +145,9 @@ Would you like to enter Review Mode?
 - Set host property
 ```
 
-**Appropriate:**
+**Appropriate (what the plan provides):**
 ```
-- Add Redis client configuration for rate limiting
-- Create rate limit key schema
-- Implement counter increment with TTL
-```
-
----
-
-## Progress Note Quality
-
-**Poor:**
-```
-2026-03-07 10:15 - Did some work
-```
-
-**Better:**
-```
-2026-03-07 10:15 - Created Redis client
-```
-
-**Best:**
-```
-2026-03-07 10:15 - Created Redis client for rate limiting (separate DB to isolate from cache)
-```
-
-Include what was done and why (if decision was made).
-
----
-
-## Handling Discovered Work
-
-During Milestone 2, discover API has GraphQL endpoint not mentioned in plan.
-
-**Don't:**
-- Implement rate limiting for GraphQL without approval
-- Ignore GraphQL
-- Assume GraphQL should work the same way
-
-**Do:**
-
-Add to LOG.md after Milestone 2 tasks:
-```markdown
-### Discovered Issues
-- API has GraphQL endpoint not in requirements
-- GraphQL uses different auth mechanism
-- May need separate rate limiting strategy
-```
-
-After completing milestone, report:
-```
-Milestone 2 complete.
-
-Discovered issue: API includes GraphQL endpoint not addressed in plan. 
-GraphQL uses different auth and may need separate rate limiting approach.
-
-Options:
-A) Apply same rate limiting to GraphQL
-B) Create separate plan for GraphQL rate limiting
-C) Exclude GraphQL from this implementation
-
-Which approach?
+- Add rate limit config to src/config/index.ts
+- Create rate limit storage module in src/services/rate-limit-store.ts
+- Add unit tests for counter increment and expiry logic
 ```
