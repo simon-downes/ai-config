@@ -19,8 +19,10 @@
 
 ## Standard Tools
 **Code:** rg (ripgrep), fd, tree, shellcheck, shfmt
-**Data:** jq, yq
-**Cloud:** gh, aws, tofu
+**Data:** jq, yq, sqlite3
+**Cloud:** gh, aws, tofu, terraform-docs
+**Database:** psql, mysql (mariadb), redis-cli
+**Network:** curl, xh, nc (netcat), ping, dig/nslookup
 **Python:** uv, python3
 
 ## Enhanced Tools
@@ -59,6 +61,33 @@ xh --download https://example.com/file.zip
 ```
 
 **When to use:** Testing APIs, quick HTTP requests with JSON, debugging endpoints.
+
+## Database Clients
+
+### psql
+PostgreSQL client for querying RDS/Aurora Postgres instances.
+
+**Use for:** Checking schemas, running diagnostic queries, verifying data migrations.
+
+### mysql
+MariaDB-compatible client for querying RDS MySQL/Aurora MySQL instances.
+
+**Use for:** Checking schemas, running diagnostic queries, inspecting table structures.
+
+### redis-cli
+Redis client for inspecting ElastiCache instances.
+
+```bash
+# ElastiCache typically requires TLS
+redis-cli -h <hostname> -p 6379 --tls
+```
+
+**Use for:** Checking ElastiCache health, inspecting key patterns, verifying TTLs.
+
+## Network Diagnostics
+
+`nc` (netcat) for TCP port checks, `ping` for ICMP reachability, `dig`/`nslookup` for DNS.
+Most AWS services don't respond to ICMP — prefer `nc -zv <host> <port>` for connectivity testing.
 
 ## Agent Kit Tools
 

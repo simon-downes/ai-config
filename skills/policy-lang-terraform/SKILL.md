@@ -219,12 +219,12 @@ resource "datadog_monitor" "api_errors" {
 
 ## IAM Policies
 
-**Prefer inline policies on roles.** Only create separate `aws_iam_policy` resources when
-the policy will be attached to multiple roles.
+**Prefer inline policies on roles** via `aws_iam_role_policy`. Only create separate
+`aws_iam_policy` resources when the policy will be attached to multiple roles.
 
 **Prefer `jsonencode({})`** over `aws_iam_policy_document` data sources for policy documents.
 
-**Example — inline policy with assume role:**
+**Example — role with inline policy:**
 ```hcl
 resource "aws_iam_role" "processor" {
   name = "${local.namespace}-processor-role"
@@ -240,22 +240,24 @@ resource "aws_iam_role" "processor" {
     }]
   })
 
-  inline_policy {
-    name = "processor-permissions"
-    policy = jsonencode({
-      Version = "2012-10-17"
-      Statement = [{
-        Effect = "Allow"
-        Action = [
-          "dynamodb:PutItem",
-          "dynamodb:GetItem"
-        ]
-        Resource = aws_dynamodb_table.events.arn
-      }]
-    })
-  }
-
   tags = local.common_tags
+}
+
+resource "aws_iam_role_policy" "processor" {
+  name = "processor-permissions"
+  role = aws_iam_role.processor.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "dynamodb:PutItem",
+        "dynamodb:GetItem"
+      ]
+      Resource = aws_dynamodb_table.events.arn
+    }]
+  })
 }
 ```
 
